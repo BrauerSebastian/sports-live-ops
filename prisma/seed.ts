@@ -2,7 +2,12 @@ import { PrismaClient, ArticleStatus, EventStatus, IncidentType, NotificationSta
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
-const date = (value: string) => new Date(`${value}T12:00:00.000Z`);
+const DAY = 24 * 60 * 60 * 1000;
+
+function dayOffset(days: number, hour = 12, minute = 0) {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + days, hour, minute, 0));
+}
 
 async function main() {
   await prisma.notificationOutbox.deleteMany();
@@ -29,7 +34,9 @@ async function main() {
   ]);
 
   const competition = await prisma.competition.create({ data: { slug: "north-american-league", name: "North American League", region: "North America" } });
-  const season = await prisma.season.create({ data: { competitionId: competition.id, name: "2025 Fall Season", startsOn: date("2025-09-01"), endsOn: date("2025-12-14"), isActive: true } });
+  const year = new Date().getUTCFullYear();
+  const season = await prisma.season.create({ data: { competitionId: competition.id, name: `${year} Season`, startsOn: dayOffset(-45), endsOn: dayOffset(90), isActive: true } });
+
   const teams = [
     ["Northbridge FC", "Northbridge", "NFC"],
     ["Eastvale United", "Eastvale", "EUN"],
@@ -56,23 +63,27 @@ async function main() {
     return [name, venue] as const;
   })));
 
-  const createEvent = async (data: { title: string; scheduledAt: string; status: EventStatus; venue: string; home: string; away: string; minute?: number }) => {
+  const createEvent = async (data: { title: string; scheduledAt: Date; status: EventStatus; venue: string; home: string; away: string; minute?: number }) => {
+    const startedAt = (data.status === EventStatus.LIVE || data.status === EventStatus.PAUSED || data.status === EventStatus.FINISHED) ? new Date(data.scheduledAt.getTime() + 5 * 60 * 1000) : undefined;
+    const endedAt = data.status === EventStatus.FINISHED ? new Date(data.scheduledAt.getTime() + 110 * 60 * 1000) : undefined;
     return prisma.sportEvent.create({
       data: {
         competitionId: competition.id,
         seasonId: season.id,
         venueId: venues[data.venue].id,
         title: data.title,
-        scheduledAt: date(data.scheduledAt),
+        scheduledAt: data.scheduledAt,
         status: data.status,
         currentMinute: data.minute ?? 0,
+        startedAt,
+        endedAt,
         participants: { create: [{ participantId: participants[data.home].id, side: ParticipantSide.HOME }, { participantId: participants[data.away].id, side: ParticipantSide.AWAY }] },
         statistic: { create: {} },
       },
     });
   };
 
-  const liveEvent = await createEvent({ title: "Northbridge FC vs Eastvale United", scheduledAt: "2025-10-18", status: EventStatus.LIVE, venue: "Riverside Stadium", home: "NFC", away: "EUN", minute: 64 });
+  const liveEvent = await createEvent({ title: "Northbridge FC vs Eastvale United", scheduledAt: new Date(Date.now() - 70 * 60 * 1000), status: EventStatus.LIVE, venue: "Riverside Stadium", home: "NFC", away: "EUN", minute: 64 });
   await prisma.incident.createMany({ data: [
     { eventId: liveEvent.id, type: IncidentType.GOAL, minute: 12, participantId: participants.NFC.id, playerName: "L. Okafor", assistName: "M. Reed", detail: "Opening goal", createdById: operator.id },
     { eventId: liveEvent.id, type: IncidentType.YELLOW_CARD, minute: 28, participantId: participants.EUN.id, playerName: "M. Costa", detail: "Late challenge", createdById: operator.id },
@@ -81,10 +92,12 @@ async function main() {
     { eventId: liveEvent.id, authorId: operator.id, minute: 64, body: "Northbridge are controlling the tempo through the middle third." },
     { eventId: liveEvent.id, authorId: operator.id, minute: 62, body: "A quick Eastvale counter is cleared at the near post." },
   ] });
+  await prisma.statistic.update({ where: { eventId: liveEvent.id }, data: { homePossession: 54, awayPossession: 46, homeShots: 8, awayShots: 6, homeShotsOnTarget: 4, awayShotsOnTarget: 2, homeCorners: 5, awayCorners: 3, homeFouls: 9, awayFouls: 11 } });
 
-  const historicalNorthbridge = await createEvent({ title: "Northbridge FC vs Eastvale United", scheduledAt: "2025-10-11", status: EventStatus.FINISHED, venue: "Riverside Stadium", home: "NFC", away: "EUN", minute: 90 });
-  const historicalHarbor = await createEvent({ title: "Harbor City vs Stonewall Athletic", scheduledAt: "2025-10-12", status: EventStatus.FINISHED, venue: "Harbor Bowl", home: "HBC", away: "SWA", minute: 90 });
-  const historicalWestfield = await createEvent({ title: "Westfield Rovers vs AC Meridian", scheduledAt: "2025-10-12", status: EventStatus.FINISHED, venue: "Westfield Park", home: "WFR", away: "ACM", minute: 90 });
+  const historicalNorthbridge = await createEvent({ title: "Northbridge FC vs Eastvale United", scheduledAt: dayOffset(-7, 19, 30), status: EventStatus.FINISHED, venue: "Riverside Stadium", home: "NFC", away: "EUN", minute: 90 });
+  const historicalHarbor = await createEvent({ title: "Harbor City vs Stonewall Athletic", scheduledAt: dayOffset(-6, 18), status: EventStatus.FINISHED, venue: "Harbor Bowl", home: "HBC", away: "SWA", minute: 90 });
+  const historicalWestfield = await createEvent({ title: "Westfield Rovers vs AC Meridian", scheduledAt: dayOffset(-6, 20), status: EventStatus.FINISHED, venue: "Westfield Park", home: "WFR", away: "ACM", minute: 90 });
+  await createEvent({ title: "Lakeside 04 vs Port Union", scheduledAt: dayOffset(-5, 19), status: EventStatus.FINISHED, venue: "Meridian Ground", home: "L04", away: "PTU", minute: 90 });
   await prisma.incident.createMany({ data: [
     { eventId: historicalNorthbridge.id, type: IncidentType.GOAL, minute: 23, participantId: participants.NFC.id, playerName: "L. Okafor", createdById: operator.id },
     { eventId: historicalNorthbridge.id, type: IncidentType.GOAL, minute: 61, participantId: participants.NFC.id, playerName: "D. Vale", createdById: operator.id },
@@ -96,17 +109,18 @@ async function main() {
     { eventId: historicalWestfield.id, type: IncidentType.GOAL, minute: 55, participantId: participants.ACM.id, playerName: "P. Rowe", createdById: operator.id },
   ] });
 
-  await createEvent({ title: "Harbor City vs Stonewall Athletic", scheduledAt: "2025-10-18", status: EventStatus.SCHEDULED, venue: "Harbor Bowl", home: "HBC", away: "SWA" });
-  await createEvent({ title: "Westfield Rovers vs AC Meridian", scheduledAt: "2025-10-18", status: EventStatus.SCHEDULED, venue: "Westfield Park", home: "WFR", away: "ACM" });
-  await createEvent({ title: "Lakeside 04 vs Port Union", scheduledAt: "2025-10-18", status: EventStatus.SCHEDULED, venue: "Meridian Ground", home: "L04", away: "PTU" });
+  await createEvent({ title: "Harbor City vs Stonewall Athletic", scheduledAt: dayOffset(0, 20, 30), status: EventStatus.SCHEDULED, venue: "Harbor Bowl", home: "HBC", away: "SWA" });
+  await createEvent({ title: "Westfield Rovers vs AC Meridian", scheduledAt: dayOffset(1, 18), status: EventStatus.SCHEDULED, venue: "Westfield Park", home: "WFR", away: "ACM" });
+  await createEvent({ title: "Lakeside 04 vs Port Union", scheduledAt: dayOffset(1, 20), status: EventStatus.SCHEDULED, venue: "Meridian Ground", home: "L04", away: "PTU" });
 
   const standings = [
-    ["NFC", 1, 1, 0, 0, 2, 1, 1, 3], ["HBC", 1, 1, 0, 0, 2, 1, 1, 3], ["WFR", 1, 0, 1, 0, 1, 1, 0, 1], ["ACM", 1, 0, 1, 0, 1, 1, 0, 1], ["EUN", 1, 0, 0, 1, 1, 2, -1, 0], ["SWA", 1, 0, 0, 1, 1, 2, -1, 0], ["L04", 0, 0, 0, 0, 0, 0, 0, 0], ["PTU", 0, 0, 0, 0, 0, 0, 0, 0],
+    ["NFC", 1, 1, 0, 0, 2, 1, 1, 3], ["HBC", 1, 1, 0, 0, 2, 1, 1, 3], ["WFR", 1, 0, 1, 0, 1, 1, 0, 1], ["ACM", 1, 0, 1, 0, 1, 1, 0, 1], ["L04", 1, 0, 1, 0, 0, 0, 0, 1], ["PTU", 1, 0, 1, 0, 0, 0, 0, 1], ["EUN", 1, 0, 0, 1, 1, 2, -1, 0], ["SWA", 1, 0, 0, 1, 1, 2, -1, 0],
   ];
   await prisma.standing.createMany({ data: standings.map(([code, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points]) => ({ seasonId: season.id, participantId: participants[code as string].id, played: played as number, wins: wins as number, draws: draws as number, losses: losses as number, goalsFor: goalsFor as number, goalsAgainst: goalsAgainst as number, goalDifference: goalDifference as number, points: points as number })) });
 
-  const article = await prisma.newsArticle.create({ data: { slug: "northbridge-hold-the-line", title: "Northbridge hold the line in a tense Riverside night", summary: "A disciplined Northbridge side take all three points in the latest Northeast Division round.", body: "Northbridge FC defended their advantage with composure at Riverside Stadium. The result keeps the fictional North American League table tightly contested.", status: ArticleStatus.PUBLISHED, publishedAt: date("2025-10-13"), authorId: editor.id, competitionId: competition.id, eventId: historicalNorthbridge.id } });
-  await prisma.newsArticle.create({ data: { slug: "matchday-eight-preview", title: "Matchday 08: four fixtures under the lights", summary: "The next round brings a busy Saturday across the North American League.", body: "Operators are preparing four fixtures across the region, with the Northeast Division taking center stage.", status: ArticleStatus.DRAFT, authorId: editor.id, competitionId: competition.id } });
+  const article = await prisma.newsArticle.create({ data: { slug: "northbridge-hold-the-line", title: "Northbridge hold the line in a tense Riverside night", summary: "A disciplined Northbridge side take all three points in the latest league round.", body: "Northbridge FC defended their advantage with composure at Riverside Stadium. The result keeps the fictional North American League table tightly contested.", status: ArticleStatus.PUBLISHED, publishedAt: new Date(Date.now() - 2 * DAY), authorId: editor.id, competitionId: competition.id, eventId: historicalNorthbridge.id } });
+  await prisma.newsArticle.create({ data: { slug: "riverside-live-desk", title: "Live desk: Northbridge protect a narrow lead", summary: "The operations desk tracks a tight second half at Riverside with Northbridge one goal ahead.", body: "Northbridge carry a narrow advantage into the closing stages at Riverside Stadium. Follow the live event page for incidents, commentary, match time, and statistics as the fictional match develops.", status: ArticleStatus.PUBLISHED, publishedAt: new Date(Date.now() - 20 * 60 * 1000), authorId: editor.id, competitionId: competition.id, eventId: liveEvent.id } });
+  await prisma.newsArticle.create({ data: { slug: "next-round-preview", title: "Next round: four fixtures under the lights", summary: "The next round brings a busy schedule across the North American League.", body: "Operators are preparing the next set of fixtures across the region, with live coverage available through the competition center.", status: ArticleStatus.DRAFT, authorId: editor.id, competitionId: competition.id } });
 
   await prisma.auditLog.create({ data: { actorId: admin.id, action: "SEED_COMPLETED", entityType: "Competition", entityId: competition.id, metadata: { liveEventId: liveEvent.id } } });
   await prisma.notificationOutbox.create({ data: { eventId: liveEvent.id, createdById: operator.id, type: "EVENT_STARTED", audience: "PUBLIC_FOLLOWERS", payload: { title: liveEvent.title, status: liveEvent.status }, status: NotificationStatus.PENDING } });

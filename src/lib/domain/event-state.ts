@@ -10,12 +10,8 @@ const transitions: Record<EventStatus, readonly EventStatus[]> = {
   CANCELLED: [],
 };
 
-export function canTransition(from: EventStatus, to: EventStatus) {
-  return from === to || transitions[from].includes(to);
-}
-
+export function canTransition(from: EventStatus, to: EventStatus) { return transitions[from].includes(to); }
+export function allowedTransitions(from: EventStatus) { return [...transitions[from]]; }
 export function assertTransition(from: EventStatus, to: EventStatus) {
-  if (!canTransition(from, to)) {
-    throw new Error(`Invalid event transition: ${from} -> ${to}`);
-  }
+  if (!canTransition(from, to)) throw new Error(`Invalid event transition: ${from} -> ${to}`);
 }

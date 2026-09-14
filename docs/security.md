@@ -1,9 +1,23 @@
 # Security notes
 
-- Control Room routes require an Auth.js session in the server layout.
-- Event and content mutation routes check the authenticated role server-side.
-- Seed passwords are bcrypt hashes; plaintext values exist only as documented local demo inputs.
-- `.env` is ignored; secrets belong in environment configuration and are never committed.
-- Zod validates event, incident, statistics, and article input before persistence.
-- Public news queries require `PUBLISHED`, so draft articles are not exposed by public routes.
-- The current MVP uses credentials authentication and JWT sessions. Production deployment should add rate limiting, secure secret rotation, stronger account lifecycle controls, CSRF review, and an external identity provider if appropriate.
+Implemented safeguards:
+
+- Control Room requires a NextAuth session.
+- Event, editorial, notification, and route-group capabilities are role-gated server-side.
+- Event operations are ADMIN/OPERATOR capabilities; editorial management is ADMIN/EDITOR.
+- Seed passwords are bcrypt hashes in the database; plaintext demo credentials are documentation-only local inputs.
+- `.env` is ignored and `.env.example` contains placeholders/local defaults only.
+- Zod validates lifecycle, clock, incidents/corrections, commentary, statistics, and editorial input.
+- Participant ids used by incidents are verified to belong to the target event.
+- Public article reads require `PUBLISHED`; React renders editorial body as escaped text paragraphs.
+- Server-confirmed mutations prevent rejected operations from remaining as successful client state.
+
+Production hardening still required:
+
+- external identity/account lifecycle or stronger credential management;
+- secret rotation;
+- login/API rate limiting;
+- CSRF/deployment review for the final hosting architecture;
+- durable shared realtime transport;
+- provider-specific notification security;
+- production observability and backup/recovery procedures.

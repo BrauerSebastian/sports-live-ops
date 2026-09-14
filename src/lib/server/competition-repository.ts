@@ -3,11 +3,13 @@ import { prisma } from "@/lib/server/prisma";
 
 export const eventWithContext = {
   competition: true,
+  season: true,
   venue: true,
   participants: { include: { participant: true } },
   incidents: { include: { participant: true }, orderBy: [{ minute: "desc" as const }, { createdAt: "desc" as const }] },
   liveComments: { include: { author: true }, orderBy: { publishedAt: "desc" as const } },
   statistic: true,
+  newsArticles: { where: { status: "PUBLISHED" as const }, select: { id: true, title: true, summary: true, publishedAt: true }, orderBy: { publishedAt: "desc" as const } },
 } satisfies Prisma.SportEventInclude;
 
 export async function getActiveCompetition() {
@@ -37,10 +39,20 @@ export async function getUpcomingEvents(limit = 6) {
   });
 }
 
-export async function getEvents() {
+export async function getEvents(status?: EventStatus, competitionId?: string) {
   return prisma.sportEvent.findMany({
+    where: { ...(status ? { status } : {}), ...(competitionId ? { competitionId } : {}) },
     include: eventWithContext,
     orderBy: { scheduledAt: "asc" },
+  });
+}
+
+export async function getAttentionEvents(limit = 6) {
+  return prisma.sportEvent.findMany({
+    where: { status: { in: [EventStatus.PAUSED, EventStatus.DELAYED] } },
+    include: eventWithContext,
+    orderBy: { updatedAt: "desc" },
+    take: limit,
   });
 }
 
@@ -71,7 +83,16 @@ export async function getCompetitions() {
 }
 
 export async function getCompetitionById(id: string) {
-  return prisma.competition.findUnique({ where: { id }, include: { seasons: { orderBy: { startsOn: "desc" } }, participants: { include: { participant: true } }, venues: true, events: { include: eventWithContext, orderBy: { scheduledAt: "asc" } } } });
+  return prisma.competition.findUnique({
+    where: { id },
+    include: {
+      seasons: { orderBy: { startsOn: "desc" }, include: { standings: { include: { participant: true }, orderBy: [{ points: "desc" }, { goalDifference: "desc" }, { goalsFor: "desc" }] } } },
+      participants: { include: { participant: true } },
+      venues: true,
+      events: { include: eventWithContext, orderBy: { scheduledAt: "asc" } },
+      newsArticles: { where: { status: "PUBLISHED" }, include: { author: { select: { displayName: true } } }, orderBy: { publishedAt: "desc" }, take: 5 },
+    },
+  });
 }
 
 export async function getEditorialArticles() {
@@ -82,8 +103,22 @@ export async function getArticleById(id: string, publishedOnly = false) {
   return prisma.newsArticle.findFirst({ where: { id, ...(publishedOnly ? { status: "PUBLISHED" } : {}) }, include: { author: { select: { displayName: true } }, competition: true, event: true } });
 }
 
-export async function getAuditLogs() {
-  return prisma.auditLog.findMany({ include: { actor: { select: { displayName: true, email: true } }, event: { select: { title: true } } }, orderBy: { createdAt: "desc" }, take: 100 });
+export type AuditFilters = { actor?: string; action?: string; entityType?: string; date?: string };
+
+export async function getAuditLogs(filters: AuditFilters = {}) {
+  const start = filters.date ? new Date(`${filters.date}T00:00:00.000Z`) : undefined;
+  const end = start ? new Date(start.getTime() + 24 * 60 * 60 * 1000) : undefined;
+  return prisma.auditLog.findMany({
+    where: {
+      ...(filters.action ? { action: { contains: filters.action, mode: "insensitive" } } : {}),
+      ...(filters.entityType ? { entityType: { contains: filters.entityType, mode: "insensitive" } } : {}),
+      ...(filters.actor ? { actor: { is: { OR: [{ displayName: { contains: filters.actor, mode: "insensitive" } }, { email: { contains: filters.actor, mode: "insensitive" } }] } } } : {}),
+      ...(start && end ? { createdAt: { gte: start, lt: end } } : {}),
+    },
+    include: { actor: { select: { displayName: true, email: true } }, event: { select: { title: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
 }
 
 export async function getNotificationOutbox() {

@@ -1,78 +1,79 @@
 # Implementation progress
 
-This document is the source of truth for the Sports Live Ops MVP. The approved Control Room and Live Center visual language is frozen while functionality is added.
+This is the source of truth for the Sports Live Ops MVP. The approved Control Room and Live Center visual direction is frozen; current work is focused on functional completeness and verification.
 
-## Current baseline
+## Implemented
 
-- [x] Approved workstation UI exists for Control Room overview, Event Control, and Live Center.
-- [x] Prototype event controls work only in client memory.
-- [x] Fictional North American League demo data exists only as hardcoded arrays.
-- [x] PostgreSQL-compatible Prisma schema, generated initial migration SQL, and seed exist.
-- [x] Prisma server client, repositories, health endpoint, and event mutation API routes exist.
-- [x] Credentials authentication foundation exists with hashed-password lookup and role-bearing sessions.
-- [x] Persistent event lifecycle, incidents, commentary, statistics, audit, and notification writes exist behind server services.
-- [x] Local cross-client realtime transport exists through SSE and an in-process event bus.
-- [x] Initial domain unit test suite exists for lifecycle, score derivation, and standings.
-- [ ] No CI workflow yet.
+### Persistence and domain
 
-## Implementation checklist
+- [x] PostgreSQL/Prisma relational schema, initial migration, `.env.example`, and believable fictional seed.
+- [x] Dynamic seed dates so the demo remains current instead of being tied to a past matchday.
+- [x] Competition, season, participant, venue, event, incident, commentary, statistics, standings, content, audit, and notification-outbox records.
+- [x] Explicit event lifecycle rules shared by server logic, operator controls, and unit tests.
+- [x] Score derived from active goal incidents; corrections reference and invalidate the target incident.
+- [x] Standings rebuilt from finished events.
+- [x] Persisted operator-applied match minute and validated statistics.
 
-### Phase 1 - Persistence foundation
+### Authentication and authorization
 
-- [x] Add PostgreSQL-compatible Prisma schema and enums.
-- [x] Add environment example and database scripts.
-- [x] Add believable fictional competition seed.
-- [x] Add server-side database client and repositories/services.
-- [ ] Replace prototype domain reads with database-backed reads.
-- [x] Generate the initial migration SQL without a local PostgreSQL service.
-- [x] Run lint, typecheck, domain tests, and build.
+- [x] Credentials authentication with bcrypt-hashed demo passwords and JWT sessions.
+- [x] ADMIN, OPERATOR, and EDITOR roles.
+- [x] Server-side role checks on event operations, content, notification processing, and protected Control Room route groups.
+- [x] Role-aware navigation and an explicit sign-out action.
+- [x] Editor sessions are directed to editorial workflows instead of event-operation controls.
 
-### Phase 2 - Auth and permissions
+### Control Room
 
-- [x] Add login and password hashing.
-- [x] Add ADMIN, OPERATOR, and EDITOR roles to the data model and session.
-- [ ] Protect Control Room routes server-side.
-- [x] Enforce operator permissions in services and API routes.
+- [x] Database-backed operations overview.
+- [x] Event list with working status and competition filters.
+- [x] Competition details and real standings.
+- [x] Event Control workstation using real event/team/venue data rather than hardcoded match assumptions.
+- [x] Server-confirmed lifecycle mutations, clock updates, incidents, goal scoring, corrections, commentary, and statistics.
+- [x] Safe mutation feedback: rejected operations do not remain visible as successful local state.
+- [x] Editorial create/edit/draft/publish workflow with optional competition/event associations.
+- [x] Notification outbox with local processing simulator.
+- [x] Filterable audit log.
 
-### Phase 3 - Event domain
+### Public Live Center
 
-- [x] Implement explicit event lifecycle transitions.
-- [x] Persist incidents and derive scores from goal incidents in tested domain code.
-- [x] Persist statistics and audit records; standings calculation is covered in unit tests.
-- [ ] Add database integration coverage.
+- [x] Database-backed Live Center home, competition, fixtures/results, event, and published-news routes.
+- [x] Real result scores and live scores derived from incidents.
+- [x] Working timeline/commentary/statistics tabs.
+- [x] Actual commentary minutes rather than fabricated display timestamps.
+- [x] Competition standings, upcoming fixtures, and related published content.
+- [x] Draft articles excluded from public reads.
 
-### Phase 4 - Control Room completion
+### Realtime
 
-- [x] Add real navigable event list and competition routes.
-- [x] Add editorial content list/create/edit/publish workflow.
-- [x] Add notification outbox read surface and audit UI.
-- [x] Add notification processing action; richer error states remain.
+- [x] SSE transport with automatic browser reconnect behavior.
+- [x] Database remains the source of truth; realtime messages invalidate and refresh server-rendered event state.
+- [x] Status, clock, incidents, commentary, and statistics broadcast after successful persistence.
+- [x] Connection/reconnection status exposed to the public viewer.
 
-### Phase 5 - Public Live Center
+### Reliability and delivery
 
-- [x] Add public route structure.
-- [x] Add competition, fixtures/results, event, and news routes.
-- [x] Read published content only.
-- [ ] Verify database-backed mobile behavior at 390px.
+- [x] Loading, not-found, forbidden, route-level failure, empty, and mutation-error states.
+- [x] Health endpoint.
+- [x] CI workflow for install, Prisma client generation, lint, typecheck, unit tests, and build.
+- [x] Domain tests for lifecycle, score/corrections, standings, validation, authorization, and article rules.
+- [x] Optional Docker Compose PostgreSQL service for local setup.
+- [x] Architecture, API, realtime, security, testing, and portfolio documentation.
 
-### Phase 6 - Realtime
+## Verification status in this handoff environment
 
-- [x] Add event stream transport.
-- [x] Broadcast operator mutations to separate public clients.
-- [x] Document reconnect, ordering, duplicates, and scaling.
-- [ ] Add two-context Playwright flow.
+- [x] TypeScript `tsc --noEmit` passes.
+- [x] ESLint passes.
+- [ ] Vitest execution could not be completed in this Linux sandbox because the uploaded `node_modules` tree was installed on Windows and contains Windows-only Rollup native packages.
+- [ ] `next build` could not be completed for the same cross-platform `node_modules` reason; the sandbox has no network access to install the Linux optional binaries.
+- [ ] Migration/seed and the two-browser realtime acceptance flow require a running PostgreSQL service, which is not available in this sandbox.
 
-### Phase 7 - Hardening and delivery
+These are environment verification gaps, not intentionally unfinished product screens. Run the acceptance sequence in `docs/testing.md` after a clean `npm install` on the target machine.
 
-- [ ] Add loading, empty, not-found, forbidden, and failure states.
-- [ ] Add accessibility checks.
-- [ ] Add health endpoint and structured error handling.
-- [x] Add CI.
-- [ ] Complete portfolio case study and browser workflow hardening.
+## Known production limitations
 
-## Decisions and limitations
-
-- PostgreSQL is the target database. The application should remain buildable without a locally running database, but persistence verification requires a PostgreSQL connection.
-- Football is the first sport. Core records use sport-neutral names where practical; football incident types and standings rules are explicit.
-- The approved visual system in `src/app/globals.css` is preserved. New screens must use its graphite, neutral-surface, restrained-border, and lime live-state language.
-- The local environment currently has no PostgreSQL listener or Docker engine, so migration application and seed execution remain pending an available database.
+- The in-process SSE event bus is single-instance; a multi-instance deployment needs shared pub/sub such as Redis, NATS, or a managed broker.
+- Credentials auth and shared demo accounts are portfolio/demo identity, not production account lifecycle management.
+- Notification delivery is simulated through the outbox; no email/SMS/push provider is connected.
+- The match clock stores an operator-applied minute and is not broadcast-grade synchronized timekeeping.
+- Football is the implemented sport vertical slice; the model is extensible, but other sport-specific workflows are not implemented.
+- Full PostgreSQL integration and browser E2E automation should be added before treating this as production software.

@@ -1,49 +1,98 @@
 # Sports Live Ops
 
-Sports Live Ops is an original sports technology product for running fictional live competitions. It has two connected surfaces:
+Sports Live Ops is an original sports-tech portfolio product for operating fictional live competitions and publishing the same event state to a public fan experience.
 
-- **Control Room**: authenticated event operations, incidents, commentary, editorial content, notifications, and audit records.
-- **Live Center**: public competition, fixture, news, and live event views.
+It has two connected surfaces:
 
-The approved visual baseline is a dense graphite and neutral operations workstation with a lime live-state accent. The event itself is the center of the workflow.
+- **Control Room** - authenticated event operations, event lifecycle, incidents/corrections, match clock, statistics, live commentary, editorial content, notifications, and audit history.
+- **Live Center** - public competition, fixture/result, standings, news, and live-event views updated through Server-Sent Events.
+
+The event is the center of the workflow. The Control Room uses a dense operations-workstation UI; the Live Center is a separate responsive public surface rather than an admin dashboard with the navigation removed.
 
 ## Stack
 
-- Next.js App Router 16
-- React and TypeScript strict mode
-- PostgreSQL and Prisma 6
+- Next.js 16 App Router
+- React 19 and TypeScript strict mode
+- PostgreSQL + Prisma 6
 - Zod validation
-- Auth.js credentials authentication
+- NextAuth/Auth.js credentials sessions with bcrypt password hashes
+- Server-Sent Events for realtime invalidation
 - Vitest domain tests
-- Server-Sent Events for local realtime invalidation
+- GitHub Actions quality checks
 
-## Local setup
+## Quick start
 
 Prerequisites: Node.js 20+, npm, and PostgreSQL 14+.
 
+### Option A - use Docker for PostgreSQL
+
+```bash
+# PowerShell or a terminal with Docker Compose
+docker compose up -d postgres
+```
+
+### Option B - use your own PostgreSQL
+
+Create a database and set `DATABASE_URL` accordingly.
+
+Then:
+
 ```bash
 npm install
+```
+
+Create `.env` from `.env.example` and set a local `NEXTAUTH_SECRET`.
+
+PowerShell:
+
+```powershell
 Copy-Item .env.example .env
-# Set DATABASE_URL and NEXTAUTH_SECRET in .env
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Prepare the database and run the application:
+
+```bash
 npm run db:generate
 npm run db:migrate
 npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000/live](http://localhost:3000/live) for the public surface or [http://localhost:3000/login](http://localhost:3000/login) for Control Room access.
+Open:
 
-This workspace does not include Docker or a local PostgreSQL service, so migration and seed execution require a PostgreSQL instance supplied by the developer.
+- Public Live Center: `http://localhost:3000/live`
+- Control Room login: `http://localhost:3000/login`
+- Health check: `http://localhost:3000/api/health`
 
 ## Demo accounts
 
-The seed creates fictional accounts with the shared demo password `ChangeMe-Portfolio-2026`:
+The seed creates fictional local accounts with the shared demo password `ChangeMe-Portfolio-2026`:
 
 - `operator@sports-live-ops.test` - event operations
 - `editor@sports-live-ops.test` - editorial workflow
 - `admin@sports-live-ops.test` - broad access
 
-These credentials are for local portfolio demonstrations only. Change them before any deployed use.
+These accounts are intentionally for local portfolio demonstration only.
+
+## Core demo
+
+The most representative workflow is:
+
+1. Log in as the operator.
+2. Open a scheduled event in Control Room.
+3. Move it through `Scheduled -> Pre-live -> Live`.
+4. Open the public event in a separate browser window.
+5. Apply a match minute, record a goal, publish commentary, and update statistics.
+6. Observe the public Live Center update without a manual page reload.
+7. Correct an incident if needed.
+8. Finish the event and verify the final score and recalculated standings.
+9. Inspect the Audit Log and Notification Outbox.
 
 ## Useful commands
 
@@ -53,14 +102,15 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run db:generate
 npm run db:validate
 npm run db:migrate
 npm run db:seed
 ```
 
-## Routes
+## Main routes
 
-Control Room routes are protected by the authenticated server layout:
+Authenticated Control Room:
 
 - `/control`
 - `/control/events`
@@ -73,7 +123,7 @@ Control Room routes are protected by the authenticated server layout:
 - `/control/notifications`
 - `/control/audit`
 
-Public routes:
+Public:
 
 - `/live`
 - `/live/competitions/[competitionId]`
@@ -86,11 +136,16 @@ Public routes:
 - [Implementation progress](docs/PROGRESS.md)
 - [Architecture](docs/architecture.md)
 - [Domain model](docs/domain-model.md)
+- [API surface](docs/api.md)
 - [Realtime design](docs/realtime.md)
-- [UI redesign critique](docs/ui-redesign.md)
+- [Testing and acceptance flow](docs/testing.md)
+- [Security notes](docs/security.md)
+- [Product rationale](docs/product-rationale.md)
+- [Portfolio case study](docs/portfolio-case-study.md)
+- [Acceptance checklist](docs/acceptance-checklist.md)
+- [Architecture decisions](docs/decisions/)
+- [UI redesign rationale](docs/ui-redesign.md)
 
 ## Honest scope
 
-Implemented now: relational schema, migration SQL, fictional seed, hashed demo accounts, Auth.js credentials foundation, role-aware event/content APIs, event lifecycle rules, score derivation, standings calculation, audit/outbox writes, route surfaces, and local SSE transport.
-
-Still planned: database integration tests, full route-level authorization matrix, durable multi-instance realtime transport, notification processing UI, richer statistics editing, and CI/browser workflow hardening.
+This is a portfolio MVP, not a claim of production deployment. The implemented vertical slice is football event operation and public live coverage. Production work would still require shared realtime infrastructure for multiple application instances, stronger identity/account lifecycle, real notification providers, deployment hardening, and database-backed browser E2E automation.
