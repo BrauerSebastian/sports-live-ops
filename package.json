@@ -12,7 +12,13 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "check:links": "node scripts/check-links.mjs",
+    "check:images": "node scripts/audit-images.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:performance": "node scripts/check-performance-budget.mjs",
+    "check:web": "npm run check:links && npm run check:images && npm run check:secrets && npm run check:contrast && npm run check:performance"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

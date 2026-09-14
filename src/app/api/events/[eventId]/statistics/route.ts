@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { canOperate, serializeServiceError } from "@/lib/server/event-service";
-import { prisma } from "@/lib/server/prisma";
+import { canOperate, serializeServiceError, statisticsInput, updateStatistics } from "@/lib/server/event-service";
 import { getCurrentUser } from "@/lib/server/require-user";
-import { publishLiveEvent } from "@/lib/server/event-bus";
-
-const statisticsInput = z.object({
-  homePossession: z.number().int().min(0).max(100), awayPossession: z.number().int().min(0).max(100),
-  homeShots: z.number().int().min(0).max(100), awayShots: z.number().int().min(0).max(100),
-  homeShotsOnTarget: z.number().int().min(0).max(100), awayShotsOnTarget: z.number().int().min(0).max(100),
-  homeCorners: z.number().int().min(0).max(50), awayCorners: z.number().int().min(0).max(50),
-  homeFouls: z.number().int().min(0).max(50), awayFouls: z.number().int().min(0).max(50),
-}).refine((value) => value.homePossession + value.awayPossession === 100, { message: "Possession must total 100." });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ eventId: string }> }) {
   const user = await getCurrentUser();
@@ -20,9 +9,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ev
   try {
     const input = statisticsInput.parse(await request.json());
     const { eventId } = await params;
-    const statistic = await prisma.statistic.upsert({ where: { eventId }, create: { eventId, ...input }, update: input });
-    await prisma.auditLog.create({ data: { actorId: user.id, eventId, action: "STATISTICS_UPDATED", entityType: "Statistic", entityId: statistic.id, metadata: input } });
-    publishLiveEvent(eventId, "event.statistics", { statisticId: statistic.id });
+    const statistic = await updateStatistics(eventId, user.id, input);
     return NextResponse.json({ statistic });
   } catch (error) {
     const result = serializeServiceError(error);

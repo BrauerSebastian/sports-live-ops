@@ -1,0 +1,1 @@
+export default function LiveLoading() { return <main className="system-state-page"><span className="overline">Live Center</span><h1>Loading live competition...</h1><p>Preparing current fixtures and updates.</p></main>; }

@@ -1,0 +1,1 @@
+export default function ControlLoading() { return <main className="system-state-page"><span className="overline">Control Room</span><h1>Loading operations data...</h1><p>Preparing the current competition state.</p></main>; }

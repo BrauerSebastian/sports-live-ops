@@ -1,24 +1,40 @@
 # Architecture
 
-The application is a Next.js App Router product with two surfaces: an authenticated Control Room and a public Live Center. The approved workstation UI remains in the existing components; server-side data access is kept under `src/lib/server` and domain rules under `src/lib/domain`.
+Sports Live Ops is a Next.js App Router application with two product surfaces over one domain and PostgreSQL source of truth: an authenticated Control Room and a public Live Center.
 
 ```mermaid
 flowchart LR
-  CR[Control Room] --> APP[Next.js application and server actions]
-  LC[Live Center clients] --> APP
-  APP --> DOMAIN[Domain services and validation]
+  CR[Control Room] --> API[Next.js routes / server boundaries]
+  LC[Live Center] --> APP[Next.js server-rendered reads]
+  API --> DOMAIN[Domain services + Zod validation]
+  APP --> REPO[Read repositories]
   DOMAIN --> DB[(PostgreSQL via Prisma)]
-  DOMAIN --> RT[Realtime transport]
+  REPO --> DB
+  DOMAIN --> AUDIT[Audit log]
   DOMAIN --> OUTBOX[Notification outbox]
+  DOMAIN --> RT[In-process SSE event bus]
   RT --> LC
 ```
 
 ## Boundaries
 
-- `src/components`: visual surfaces and interaction composition.
-- `src/lib/domain`: deterministic business rules that can be unit tested without a database.
-- `src/lib/server`: Prisma client and query/repository functions.
-- `src/app/api`: HTTP boundaries for health and future public/operator APIs.
-- `prisma`: relational schema, migration SQL, and fictional seed data.
+- `src/components` - visual surfaces and client interactions.
+- `src/lib/domain` - deterministic lifecycle, score, and standings rules.
+- `src/lib/server` - Prisma client, repositories, mutation services, role helpers, and event bus.
+- `src/app/api` - authenticated mutation boundaries, health endpoint, and public SSE stream.
+- `src/app/control` - protected operations/editorial pages.
+- `src/app/live` - public competition and event experience.
+- `prisma` - schema, migration, and fictional seed data.
 
-The current repository is in the persistence foundation phase. Authentication, mutation services, and realtime transport are intentionally not described as implemented until they are wired to the database.
+## Mutation flow
+
+A live operation follows a database-first flow:
+
+1. Client submits an authenticated request.
+2. The API validates input and role.
+3. A service enforces domain state and writes the database transaction.
+4. Audit/outbox records are written where applicable.
+5. Only after persistence succeeds, an SSE invalidation event is emitted.
+6. Public clients refresh their server-rendered event snapshot from PostgreSQL.
+
+This avoids treating browser state or the realtime channel as authoritative.

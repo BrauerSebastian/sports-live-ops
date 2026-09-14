@@ -10,20 +10,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install
         run: npm ci
+
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Web quality checks
+        run: npm run check:web
+
       - name: Lint
         run: npm run lint
+
       - name: Typecheck
         run: npm run typecheck
+
       - name: Unit tests
         run: npm test
+
       - name: Build
         run: npm run build

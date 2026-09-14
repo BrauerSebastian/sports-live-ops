@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { commentaryInput, publishCommentary, serializeServiceError } from "@/lib/server/event-service";
+import { canPublishCommentary, commentaryInput, publishCommentary, serializeServiceError } from "@/lib/server/event-service";
 import { getCurrentUser } from "@/lib/server/require-user";
 
 export async function POST(request: Request, { params }: { params: Promise<{ eventId: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  if (!["ADMIN", "OPERATOR", "EDITOR"].includes(user.role)) return NextResponse.json({ error: "You cannot publish commentary." }, { status: 403 });
+  if (!canPublishCommentary(user.role)) return NextResponse.json({ error: "You cannot publish commentary." }, { status: 403 });
   try {
     const input = commentaryInput.parse(await request.json());
     const { eventId } = await params;
