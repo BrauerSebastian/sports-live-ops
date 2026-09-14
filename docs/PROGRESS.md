@@ -11,7 +11,7 @@ This document is the source of truth for the Sports Live Ops MVP. The approved C
 - [x] Prisma server client, repositories, health endpoint, and event mutation API routes exist.
 - [x] Credentials authentication foundation exists with hashed-password lookup and role-bearing sessions.
 - [x] Persistent event lifecycle, incidents, commentary, statistics, audit, and notification writes exist behind server services.
-- [ ] No cross-client realtime transport.
+- [x] Local cross-client realtime transport exists through SSE and an in-process event bus.
 - [x] Initial domain unit test suite exists for lifecycle, score derivation, and standings.
 - [ ] No CI workflow yet.
 
@@ -43,23 +43,23 @@ This document is the source of truth for the Sports Live Ops MVP. The approved C
 
 ### Phase 4 - Control Room completion
 
-- [ ] Add real navigable event list and competition routes.
-- [ ] Add editorial content workflow.
-- [ ] Add notifications outbox simulator.
-- [ ] Add audit UI and error states.
+- [x] Add real navigable event list and competition routes.
+- [x] Add editorial content list/create/edit/publish workflow.
+- [x] Add notification outbox read surface and audit UI.
+- [ ] Add notification processing action and richer error states.
 
 ### Phase 5 - Public Live Center
 
-- [ ] Add public route structure.
-- [ ] Add competition, fixtures/results, event, and news routes.
-- [ ] Read published content only.
-- [ ] Verify mobile behavior at 390px.
+- [x] Add public route structure.
+- [x] Add competition, fixtures/results, event, and news routes.
+- [x] Read published content only.
+- [ ] Verify database-backed mobile behavior at 390px.
 
 ### Phase 6 - Realtime
 
-- [ ] Add event stream transport.
-- [ ] Broadcast operator mutations to separate public clients.
-- [ ] Document reconnect, ordering, duplicates, and scaling.
+- [x] Add event stream transport.
+- [x] Broadcast operator mutations to separate public clients.
+- [x] Document reconnect, ordering, duplicates, and scaling.
 - [ ] Add two-context Playwright flow.
 
 ### Phase 7 - Hardening and delivery
@@ -67,8 +67,8 @@ This document is the source of truth for the Sports Live Ops MVP. The approved C
 - [ ] Add loading, empty, not-found, forbidden, and failure states.
 - [ ] Add accessibility checks.
 - [ ] Add health endpoint and structured error handling.
-- [ ] Add CI.
-- [ ] Complete documentation and portfolio case study.
+- [x] Add CI.
+- [ ] Complete portfolio case study and browser workflow hardening.
 
 ## Decisions and limitations
 

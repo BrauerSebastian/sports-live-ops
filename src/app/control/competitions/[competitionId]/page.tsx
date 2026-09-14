@@ -1,0 +1,12 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { DataUnavailable } from "@/components/system/DataUnavailable";
+import { getCompetitionById } from "@/lib/server/competition-repository";
+
+export default async function CompetitionPage({ params }: { params: Promise<{ competitionId: string }> }) {
+  let competition;
+  try { competition = await getCompetitionById((await params).competitionId); } catch { return <DataUnavailable title="Competition data unavailable" />; }
+  if (!competition) notFound();
+  const season = competition.seasons[0];
+  return <main className="route-page"><header className="route-heading"><div><p className="overline">Control Room / Competitions</p><h1>{competition.name}</h1><p>{competition.region} / {competition.sport} / {season?.name}</p></div><Link className="secondary-button" href="/control/competitions">All competitions</Link></header><div className="filter-bar"><button className="filter-active">Overview</button><button>Season</button><button>Participants</button><button>Fixtures</button><button>Standings</button><button>Content</button></div><section className="overview-columns"><section className="overview-section"><div className="section-heading"><div><span className="overline">Registered participants</span><h2>{competition.participants.length} teams</h2></div></div>{competition.participants.map(({ participant }) => <div className="event-row" key={participant.id}><span className="event-time"><strong>{participant.code}</strong></span><span className="event-match"><strong>{participant.name}</strong></span><span className="event-meta">{participant.shortName}</span><span className="row-action">Active</span></div>)}</section><section className="overview-section"><div className="section-heading"><div><span className="overline">Fixture register</span><h2>{competition.events.length} events</h2></div><Link className="text-button" href={`/control/events`}>All events</Link></div>{competition.events.slice(0, 6).map((event) => <Link className="event-row" href={`/control/events/${event.id}`} key={event.id}><span className="event-time"><strong>{event.scheduledAt.toISOString().slice(0, 10)}</strong><span className="event-status">{event.status}</span></span><span className="event-match"><strong>{event.title}</strong></span><span className="event-meta">{event.venue.name}</span><span className="row-action">Open</span></Link>)}</section></section></main>;
+}

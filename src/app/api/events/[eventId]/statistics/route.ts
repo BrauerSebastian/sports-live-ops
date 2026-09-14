@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canOperate, serializeServiceError } from "@/lib/server/event-service";
 import { prisma } from "@/lib/server/prisma";
 import { getCurrentUser } from "@/lib/server/require-user";
+import { publishLiveEvent } from "@/lib/server/event-bus";
 
 const statisticsInput = z.object({
   homePossession: z.number().int().min(0).max(100), awayPossession: z.number().int().min(0).max(100),
@@ -21,6 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ev
     const { eventId } = await params;
     const statistic = await prisma.statistic.upsert({ where: { eventId }, create: { eventId, ...input }, update: input });
     await prisma.auditLog.create({ data: { actorId: user.id, eventId, action: "STATISTICS_UPDATED", entityType: "Statistic", entityId: statistic.id, metadata: input } });
+    publishLiveEvent(eventId, "event.statistics", { statisticId: statistic.id });
     return NextResponse.json({ statistic });
   } catch (error) {
     const result = serializeServiceError(error);

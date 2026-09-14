@@ -2,6 +2,7 @@ import { EventStatus, IncidentType, Prisma, Role } from "@prisma/client";
 import { z } from "zod";
 import { assertTransition } from "@/lib/domain/event-state";
 import { prisma } from "@/lib/server/prisma";
+import { publishLiveEvent } from "@/lib/server/event-bus";
 
 export const statusInput = z.object({ status: z.nativeEnum(EventStatus) });
 export const incidentInput = z.object({
@@ -20,7 +21,7 @@ export function canOperate(role: Role) {
 }
 
 export async function transitionEvent(eventId: string, status: EventStatus, actorId: string) {
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const event = await tx.sportEvent.findUnique({ where: { id: eventId } });
     if (!event) throw new Error("EVENT_NOT_FOUND");
     assertTransition(event.status, status);
@@ -30,10 +31,12 @@ export async function transitionEvent(eventId: string, status: EventStatus, acto
     await tx.notificationOutbox.create({ data: { createdById: actorId, eventId, type: `EVENT_${status}`, audience: "PUBLIC_FOLLOWERS", payload: { eventId, status } } });
     return updated;
   });
+  publishLiveEvent(eventId, "event.status", { status: updated.status, currentMinute: updated.currentMinute });
+  return updated;
 }
 
 export async function createIncident(eventId: string, actorId: string, input: z.infer<typeof incidentInput>) {
-  return prisma.$transaction(async (tx) => {
+  const incident = await prisma.$transaction(async (tx) => {
     const event = await tx.sportEvent.findUnique({ where: { id: eventId } });
     if (!event) throw new Error("EVENT_NOT_FOUND");
     if (event.status !== EventStatus.LIVE && event.status !== EventStatus.PAUSED) throw new Error("EVENT_NOT_LIVE");
@@ -48,10 +51,12 @@ export async function createIncident(eventId: string, actorId: string, input: z.
     await tx.notificationOutbox.create({ data: { createdById: actorId, eventId, type: input.type === IncidentType.GOAL ? "GOAL" : "INCIDENT_CREATED", audience: "PUBLIC_FOLLOWERS", payload: { incidentId: incident.id, type: input.type, minute: input.minute } } });
     return incident;
   });
+  publishLiveEvent(eventId, "event.incident", { incidentId: incident.id, type: incident.type, minute: incident.minute });
+  return incident;
 }
 
 export async function publishCommentary(eventId: string, actorId: string, input: z.infer<typeof commentaryInput>) {
-  return prisma.$transaction(async (tx) => {
+  const comment = await prisma.$transaction(async (tx) => {
     const event = await tx.sportEvent.findUnique({ where: { id: eventId } });
     if (!event) throw new Error("EVENT_NOT_FOUND");
     if (event.status !== EventStatus.LIVE && event.status !== EventStatus.PAUSED) throw new Error("EVENT_NOT_LIVE");
@@ -60,6 +65,8 @@ export async function publishCommentary(eventId: string, actorId: string, input:
     await tx.notificationOutbox.create({ data: { createdById: actorId, eventId, type: "COMMENTARY_PUBLISHED", audience: "PUBLIC_FOLLOWERS", payload: { commentId: comment.id, minute: input.minute } } });
     return comment;
   });
+  publishLiveEvent(eventId, "event.commentary", { commentId: comment.id, minute: comment.minute });
+  return comment;
 }
 
 export function serializeServiceError(error: unknown) {

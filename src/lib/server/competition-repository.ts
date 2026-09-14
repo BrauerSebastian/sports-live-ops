@@ -37,6 +37,22 @@ export async function getUpcomingEvents(limit = 6) {
   });
 }
 
+export async function getEvents() {
+  return prisma.sportEvent.findMany({
+    include: eventWithContext,
+    orderBy: { scheduledAt: "asc" },
+  });
+}
+
+export async function getFinishedEvents(limit = 6) {
+  return prisma.sportEvent.findMany({
+    where: { status: EventStatus.FINISHED },
+    include: eventWithContext,
+    orderBy: { scheduledAt: "desc" },
+    take: limit,
+  });
+}
+
 export async function getEventById(id: string) {
   return prisma.sportEvent.findUnique({ where: { id }, include: eventWithContext });
 }
@@ -48,4 +64,28 @@ export async function getPublicNews(limit = 5) {
     orderBy: { publishedAt: "desc" },
     take: limit,
   });
+}
+
+export async function getCompetitions() {
+  return prisma.competition.findMany({ include: { seasons: { where: { isActive: true }, take: 1 }, _count: { select: { events: true, participants: true } } }, orderBy: { name: "asc" } });
+}
+
+export async function getCompetitionById(id: string) {
+  return prisma.competition.findUnique({ where: { id }, include: { seasons: { orderBy: { startsOn: "desc" } }, participants: { include: { participant: true } }, venues: true, events: { include: eventWithContext, orderBy: { scheduledAt: "asc" } } } });
+}
+
+export async function getEditorialArticles() {
+  return prisma.newsArticle.findMany({ include: { author: true, competition: true, event: true }, orderBy: { updatedAt: "desc" } });
+}
+
+export async function getArticleById(id: string, publishedOnly = false) {
+  return prisma.newsArticle.findFirst({ where: { id, ...(publishedOnly ? { status: "PUBLISHED" } : {}) }, include: { author: { select: { displayName: true } }, competition: true, event: true } });
+}
+
+export async function getAuditLogs() {
+  return prisma.auditLog.findMany({ include: { actor: { select: { displayName: true, email: true } }, event: { select: { title: true } } }, orderBy: { createdAt: "desc" }, take: 100 });
+}
+
+export async function getNotificationOutbox() {
+  return prisma.notificationOutbox.findMany({ include: { event: { select: { title: true } }, createdBy: { select: { displayName: true } } }, orderBy: { createdAt: "desc" }, take: 100 });
 }
