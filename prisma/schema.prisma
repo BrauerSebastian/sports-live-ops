@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  EDITOR
+}
+
+enum EventStatus {
+  SCHEDULED
+  PRE_LIVE
+  LIVE
+  PAUSED
+  FINISHED
+  DELAYED
+  CANCELLED
+}
+
+enum ParticipantSide {
+  HOME
+  AWAY
+}
+
+enum IncidentType {
+  GOAL
+  YELLOW_CARD
+  RED_CARD
+  SUBSTITUTION
+  PERIOD_STARTED
+  PERIOD_ENDED
+  CORRECTION
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  displayName         String
+  role                Role                 @default(OPERATOR)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  createdIncidents    Incident[]           @relation("IncidentAuthor")
+  liveComments        LiveComment[]
+  auditLogs           AuditLog[]
+  newsArticles        NewsArticle[]
+  notifications       NotificationOutbox[]
+}
+
+model Competition {
+  id                  String               @id @default(cuid())
+  slug                String               @unique
+  name                String
+  sport               String               @default("football")
+  region              String
+  seasons              Season[]
+  participants        CompetitionParticipant[]
+  venues              Venue[]
+  events              SportEvent[]
+  newsArticles        NewsArticle[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model Season {
+  id                  String               @id @default(cuid())
+  competitionId       String
+  name                String
+  startsOn            DateTime
+  endsOn              DateTime
+  isActive            Boolean              @default(false)
+  competition         Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  events              SportEvent[]
+  standings           Standing[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  @@unique([competitionId, name])
+  @@index([competitionId, isActive])
+}
+
+model Participant {
+  id                  String               @id @default(cuid())
+  name                String
+  shortName           String
+  code                String               @unique
+  competitionEntries  CompetitionParticipant[]
+  eventEntries        EventParticipant[]
+  incidents           Incident[]
+  standings           Standing[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model CompetitionParticipant {
+  competitionId       String
+  participantId       String
+  competition         Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  participant         Participant          @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  joinedAt            DateTime             @default(now())
+  @@id([competitionId, participantId])
+}
+
+model Venue {
+  id                  String               @id @default(cuid())
+  competitionId       String?
+  name                String
+  city                String
+  capacity            Int
+  competition         Competition?         @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  events              SportEvent[]
+}
+
+model SportEvent {
+  id                  String               @id @default(cuid())
+  competitionId       String
+  seasonId            String
+  venueId             String
+  title               String
+  scheduledAt         DateTime
+  status              EventStatus          @default(SCHEDULED)
+  currentMinute      Int                  @default(0)
+  startedAt           DateTime?
+  endedAt             DateTime?
+  competition         Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  season              Season               @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  venue               Venue                @relation(fields: [venueId], references: [id])
+  participants        EventParticipant[]
+  incidents           Incident[]
+  liveComments        LiveComment[]
+  statistic           Statistic?
+  newsArticles        NewsArticle[]
+  auditLogs           AuditLog[]
+  notifications       NotificationOutbox[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  @@index([competitionId, scheduledAt])
+  @@index([status, scheduledAt])
+}
+
+model EventParticipant {
+  eventId             String
+  participantId       String
+  side                ParticipantSide
+  participant         Participant          @relation(fields: [participantId], references: [id])
+  event               SportEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  @@id([eventId, participantId])
+  @@unique([eventId, side])
+}
+
+model Incident {
+  id                  String               @id @default(cuid())
+  eventId             String
+  type                IncidentType
+  minute              Int
+  participantId       String?
+  playerName          String?
+  assistName          String?
+  detail              String?
+  correctsIncidentId  String?
+  createdById         String
+  createdAt           DateTime             @default(now())
+  event               SportEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant         Participant?         @relation(fields: [participantId], references: [id], onDelete: SetNull)
+  createdBy           User                 @relation("IncidentAuthor", fields: [createdById], references: [id])
+  correctsIncident    Incident?            @relation("IncidentCorrections", fields: [correctsIncidentId], references: [id], onDelete: SetNull)
+  corrections        Incident[]           @relation("IncidentCorrections")
+  @@index([eventId, minute, createdAt])
+}
+
+model LiveComment {
+  id                  String               @id @default(cuid())
+  eventId             String
+  authorId            String
+  body                String
+  minute              Int
+  publishedAt         DateTime             @default(now())
+  createdAt           DateTime             @default(now())
+  event               SportEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author              User                 @relation(fields: [authorId], references: [id])
+  @@index([eventId, publishedAt])
+}
+
+model Statistic {
+  id                  String               @id @default(cuid())
+  eventId             String               @unique
+  homePossession      Int                  @default(50)
+  awayPossession      Int                  @default(50)
+  homeShots           Int                  @default(0)
+  awayShots           Int                  @default(0)
+  homeShotsOnTarget   Int                  @default(0)
+  awayShotsOnTarget   Int                  @default(0)
+  homeCorners         Int                  @default(0)
+  awayCorners         Int                  @default(0)
+  homeFouls            Int                  @default(0)
+  awayFouls            Int                  @default(0)
+  updatedAt            DateTime             @updatedAt
+  event               SportEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Standing {
+  id                  String               @id @default(cuid())
+  seasonId            String
+  participantId       String
+  played              Int                  @default(0)
+  wins                Int                  @default(0)
+  draws               Int                  @default(0)
+  losses              Int                  @default(0)
+  goalsFor            Int                  @default(0)
+  goalsAgainst        Int                  @default(0)
+  goalDifference      Int                  @default(0)
+  points              Int                  @default(0)
+  season              Season               @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  participant         Participant          @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  @@unique([seasonId, participantId])
+  @@index([seasonId, points, goalDifference, goalsFor])
+}
+
+model NewsArticle {
+  id                  String               @id @default(cuid())
+  slug                String               @unique
+  title               String
+  summary             String
+  body                String
+  status              ArticleStatus        @default(DRAFT)
+  authorId            String
+  competitionId       String?
+  eventId             String?
+  publishedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  author              User                 @relation(fields: [authorId], references: [id])
+  competition         Competition?         @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  event               SportEvent?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  @@index([status, publishedAt])
+}
+
+model AuditLog {
+  id                  String               @id @default(cuid())
+  actorId             String?
+  action              String
+  entityType          String
+  entityId            String
+  metadata            Json?
+  createdAt           DateTime             @default(now())
+  actor               User?                @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  event               SportEvent?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId             String?
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model NotificationOutbox {
+  id                  String               @id @default(cuid())
+  eventId             String?
+  createdById         String?
+  type                String
+  audience            String
+  payload             Json
+  status              NotificationStatus  @default(PENDING)
+  createdAt           DateTime             @default(now())
+  processedAt         DateTime?
+  event               SportEvent?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdBy           User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  @@index([status, createdAt])
+}
