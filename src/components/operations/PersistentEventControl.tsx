@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { EventControl } from "@/components/operations/EventControl";
+import { OperationsShell } from "@/components/shell/OperationsShell";
 import type { EventStatus, Incident, IncidentType, Team } from "@/app/page";
 
 type Props = { eventId: string; initialStatus: EventStatus; initialMinute: number; initialHomeScore: number; initialAwayScore: number; initialIncidents: Incident[]; initialCommentary: string[]; homeParticipantId: string; awayParticipantId: string };
@@ -42,5 +43,5 @@ export function PersistentEventControl({ eventId, initialStatus, initialMinute, 
     void fetch(`/api/events/${eventId}/commentary`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body, minute }) });
   }
 
-  return <EventControl status={status} setStatus={setStatus} homeScore={homeScore} awayScore={awayScore} minute={minute} setMinute={setMinute} incidents={incidents} addGoal={addGoal} addIncident={addIncident} commentary={commentary} draft={draft} setDraft={setDraft} publishCommentary={publishCommentary} />;
+  return <OperationsShell activeView="event" onNavigate={(view) => { window.location.href = view === "live" ? "/live" : view === "overview" ? "/control" : "/control/events"; }}><EventControl status={status} setStatus={setStatus} homeScore={homeScore} awayScore={awayScore} minute={minute} setMinute={setMinute} incidents={incidents} addGoal={addGoal} addIncident={addIncident} commentary={commentary} draft={draft} setDraft={setDraft} publishCommentary={publishCommentary} /></OperationsShell>;
 }
