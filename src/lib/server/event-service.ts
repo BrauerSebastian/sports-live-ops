@@ -1,6 +1,8 @@
 import { EventStatus, IncidentType, Prisma, Role } from "@prisma/client";
 import { z } from "zod";
 import { assertTransition } from "@/lib/domain/event-state";
+import { deriveScore } from "@/lib/domain/score";
+import { calculateStandings } from "@/lib/domain/standings";
 import { prisma } from "@/lib/server/prisma";
 import { publishLiveEvent } from "@/lib/server/event-bus";
 
@@ -27,12 +29,30 @@ export async function transitionEvent(eventId: string, status: EventStatus, acto
     assertTransition(event.status, status);
     const timestamps = status === EventStatus.LIVE && !event.startedAt ? { startedAt: new Date() } : status === EventStatus.FINISHED ? { endedAt: new Date() } : {};
     const updated = await tx.sportEvent.update({ where: { id: eventId }, data: { status, ...timestamps } });
+    if (status === EventStatus.FINISHED) await rebuildStandings(tx, event.seasonId);
     await tx.auditLog.create({ data: { actorId, eventId, action: `EVENT_${status}`, entityType: "SportEvent", entityId: eventId, metadata: { from: event.status, to: status } } });
     await tx.notificationOutbox.create({ data: { createdById: actorId, eventId, type: `EVENT_${status}`, audience: "PUBLIC_FOLLOWERS", payload: { eventId, status } } });
     return updated;
   });
   publishLiveEvent(eventId, "event.status", { status: updated.status, currentMinute: updated.currentMinute });
   return updated;
+}
+
+async function rebuildStandings(tx: Prisma.TransactionClient, seasonId: string) {
+  const [participants, matches] = await Promise.all([
+    tx.season.findUnique({ where: { id: seasonId }, include: { competition: { include: { participants: true } } } }).then((season) => season?.competition.participants.map((entry) => entry.participantId) ?? []),
+    tx.sportEvent.findMany({ where: { seasonId, status: EventStatus.FINISHED }, include: { participants: true, incidents: true } }),
+  ]);
+  const finishedMatches = matches.flatMap((match) => {
+    const home = match.participants.find((participant) => participant.side === "HOME");
+    const away = match.participants.find((participant) => participant.side === "AWAY");
+    if (!home || !away) return [];
+    const score = deriveScore(match.incidents, home.participantId, away.participantId);
+    return [{ homeParticipantId: home.participantId, awayParticipantId: away.participantId, homeGoals: score.home, awayGoals: score.away }];
+  });
+  const rows = calculateStandings(participants, finishedMatches);
+  await tx.standing.deleteMany({ where: { seasonId } });
+  if (rows.length) await tx.standing.createMany({ data: rows.map((row) => ({ seasonId, ...row })) });
 }
 
 export async function createIncident(eventId: string, actorId: string, input: z.infer<typeof incidentInput>) {

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 type View = "overview" | "event" | "live";
 
@@ -12,9 +13,9 @@ export function OperationsShell({ activeView, onNavigate, children }: { activeVi
       </header>
       <div className="ops-body">
         <nav className="compact-nav" aria-label="Operations navigation">
-          <div className="nav-group"><span className="nav-group-label">Operations</span><button className={activeView === "overview" ? "nav-link current" : "nav-link"} onClick={() => onNavigate("overview")}>Overview</button><button className={activeView === "event" ? "nav-link current" : "nav-link"} onClick={() => onNavigate("event")}>Live events <span className="nav-badge">1</span></button><button className="nav-link">Competitions</button></div>
-          <div className="nav-group"><span className="nav-group-label">Publishing</span><button className={activeView === "live" ? "nav-link current" : "nav-link"} onClick={() => onNavigate("live")}>Live Center</button><button className="nav-link">Content</button><button className="nav-link">Notifications</button></div>
-          <div className="nav-group"><span className="nav-group-label">System</span><button className="nav-link">Audit log</button></div>
+          <div className="nav-group"><span className="nav-group-label">Operations</span><Link className={activeView === "overview" ? "nav-link current" : "nav-link"} href="/control">Overview</Link><Link className={activeView === "event" ? "nav-link current" : "nav-link"} href="/control/events">Live events <span className="nav-badge">1</span></Link><Link className="nav-link" href="/control/competitions">Competitions</Link></div>
+          <div className="nav-group"><span className="nav-group-label">Publishing</span><Link className={activeView === "live" ? "nav-link current" : "nav-link"} href="/live">Live Center</Link><Link className="nav-link" href="/control/content">Content</Link><Link className="nav-link" href="/control/notifications">Notifications</Link></div>
+          <div className="nav-group"><span className="nav-group-label">System</span><Link className="nav-link" href="/control/audit">Audit log</Link></div>
           <div className="nav-footer"><span className="state-light" /> Connected to live feed</div>
         </nav>
         <section className="ops-main">{children}</section>

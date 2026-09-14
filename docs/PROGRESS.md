@@ -46,7 +46,7 @@ This document is the source of truth for the Sports Live Ops MVP. The approved C
 - [x] Add real navigable event list and competition routes.
 - [x] Add editorial content list/create/edit/publish workflow.
 - [x] Add notification outbox read surface and audit UI.
-- [ ] Add notification processing action and richer error states.
+- [x] Add notification processing action; richer error states remain.
 
 ### Phase 5 - Public Live Center
 
