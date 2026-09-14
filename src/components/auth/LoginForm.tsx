@@ -25,10 +25,10 @@ export function LoginForm() {
   return (
     <main className="auth-page">
       <section className="auth-panel">
-        <div className="auth-brand"><span className="wordmark-mark">S</span><strong>SPORTS LIVE OPS</strong></div>
-        <p className="overline">Control Room access</p>
-        <h1>Sign in to operations</h1>
-        <p className="auth-copy">Use one of the seeded demo accounts to enter the operations workspace.</p>
+        <div className="auth-brand"><strong>Sports Live Ops</strong></div>
+        <p className="overline">Control Room</p>
+        <h1>Sign in</h1>
+        <p className="auth-copy">Access match operations, publishing and system tools.</p>
         <form onSubmit={submit} className="auth-form" noValidate={false}>
           <label>
             Email
@@ -66,7 +66,7 @@ export function LoginForm() {
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="publish-button" disabled={pending}>{pending ? "Signing in..." : "Sign in"}</button>
         </form>
-        <p className="demo-note">Demo roles: operator, editor, and admin accounts are documented in the README.</p>
+        <p className="demo-note">Seeded operator, editor, and admin accounts are listed in the README.</p>
       </section>
     </main>
   );

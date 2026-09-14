@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { EventStatus as PrismaEventStatus } from "@prisma/client";
 import { allowedTransitions } from "@/lib/domain/event-state";
 import { apiToStatus, statusToApi, type CommentaryItem, type EventContext, type EventStatus, type Incident, type IncidentType, type MatchStatistics } from "@/types/event";
@@ -38,6 +38,18 @@ export function EventControl({ context, status, setStatus, homeScore, awayScore,
   const [correctionNote, setCorrectionNote] = useState("");
   const [statusConfirmation, setStatusConfirmation] = useState<EventStatus | null>(null);
 
+  useEffect(() => {
+    if (!correctionTarget && !statusConfirmation) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || isBusy) return;
+      setCorrectionTarget(null);
+      setCorrectionNote("");
+      setStatusConfirmation(null);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [correctionTarget, statusConfirmation, isBusy]);
+
   function requestStatus(next: EventStatus) {
     if (next === "Finished" || next === "Cancelled") {
       setStatusConfirmation(next);
@@ -55,74 +67,105 @@ export function EventControl({ context, status, setStatus, homeScore, awayScore,
     }
   }
 
+  const orderedIncidents = incidents.slice().sort((a, b) => b.minute - a.minute);
+
   return <div className="view-wrap event-view">
     <header className="event-context">
       <div>
-        <p className="overline">Live event / {context.competitionName} / {context.roundName ?? context.seasonName ?? "Match"}</p>
+        <p className="overline">{context.competitionName}{context.roundName ? ` / ${context.roundName}` : context.seasonName ? ` / ${context.seasonName}` : ""}</p>
         <h1>{context.title}</h1>
-        <p className="event-location">{context.venueName}{context.venueCity ? `, ${context.venueCity}` : ""}{context.publicViewers ? ` / ${context.publicViewers.toLocaleString()} public viewers` : ""}</p>
+        <p className="event-location">{context.venueName}{context.venueCity ? `, ${context.venueCity}` : ""}{context.publicViewers ? `. ${context.publicViewers.toLocaleString()} viewers` : ""}</p>
       </div>
-      <Link className="secondary-button" href={`/live/events/${context.id}`}>Open Live Center</Link>
+      <Link className="secondary-button" href={`/live/events/${context.id}`}>View public match</Link>
     </header>
 
-    <section className="match-banner">
-      <div className="match-team home-team"><span className="team-badge">{home.code.slice(0, 1)}</span><strong>{home.name}</strong><small>{home.shortName} / Home</small></div>
-      <div className="match-score"><div><strong>{homeScore}</strong><span>-</span><strong>{awayScore}</strong></div><span className={status === "Live" ? "match-state live-state" : "match-state"}>{status.toUpperCase()}</span><time>{clockVisible ? `${String(minute).padStart(2, "0")}:00` : "--:--"}</time></div>
-      <div className="match-team away-team"><span className="team-badge away-badge">{away.code.slice(0, 1)}</span><strong>{away.name}</strong><small>{away.shortName} / Away</small></div>
+    <section className="match-banner" aria-label={`${home.name} ${homeScore}, ${away.name} ${awayScore}`}>
+      <div className="match-team home-team">
+        <small>Home</small>
+        <strong>{home.name}</strong>
+      </div>
+      <div className="match-score">
+        <div><strong>{homeScore}</strong><span>:</span><strong>{awayScore}</strong></div>
+        <div className="match-score-meta">
+          <span className={status === "Live" ? "match-state live-state" : "match-state"}>{status}</span>
+          <time>{clockVisible ? `${String(minute).padStart(2, "0")}:00` : "Not running"}</time>
+        </div>
+      </div>
+      <div className="match-team away-team">
+        <small>Away</small>
+        <strong>{away.name}</strong>
+      </div>
     </section>
 
-    <div className="event-toolbar">
-      <span className="toolbar-caption">Match control</span>
-      {available.has("Pre-live") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Pre-live")}>Prepare event</button>}
-      {available.has("Live") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Live")}>{status === "Paused" ? "Resume event" : "Start event"}</button>}
-      {available.has("Paused") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Paused")}>Pause event</button>}
-      {available.has("Finished") && <button disabled={isBusy} className="control-button" onClick={() => requestStatus("Finished")}>End event</button>}
-      {available.has("Delayed") && <button disabled={isBusy} className="control-button" onClick={() => requestStatus("Delayed")}>Mark delayed</button>}
-      {available.has("Cancelled") && <button disabled={isBusy} className="control-button danger-control" onClick={() => requestStatus("Cancelled")}>Cancel event</button>}
-      <span className="toolbar-divider" />
-      <label className="clock-control">Clock <input disabled={isBusy || !clockVisible} type="range" min="0" max="130" value={clockDraft} onChange={(event) => setClockDraft(Number(event.target.value))} /><strong>{clockDraft}:00</strong><button type="button" disabled={isBusy || !clockVisible} className="text-control" onClick={onApplyMinute}>Apply</button></label>
-      {pendingAction && <span className="publish-state" role="status">{pendingAction}</span>}
+    <div className="event-toolbar" aria-label="Match controls">
+      <div className="event-actions">
+        {available.has("Pre-live") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Pre-live")}>Prepare event</button>}
+        {available.has("Live") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Live")}>{status === "Paused" ? "Resume match" : "Start match"}</button>}
+        {available.has("Paused") && <button disabled={isBusy} className="control-button primary-control" onClick={() => requestStatus("Paused")}>Pause match</button>}
+        {available.has("Finished") && <button disabled={isBusy} className="control-button" onClick={() => requestStatus("Finished")}>End match</button>}
+        {available.has("Delayed") && <button disabled={isBusy} className="control-button" onClick={() => requestStatus("Delayed")}>Mark delayed</button>}
+        {available.has("Cancelled") && <button disabled={isBusy} className="control-button danger-control" onClick={() => requestStatus("Cancelled")}>Cancel match</button>}
+      </div>
+
+      <div className="clock-control">
+        <label htmlFor="match-minute">Match minute</label>
+        <input id="match-minute" aria-label="Match minute" disabled={isBusy || !clockVisible} type="number" min="0" max="130" step="1" value={clockDraft} onChange={(event) => setClockDraft(Math.max(0, Math.min(130, Number(event.target.value))))} />
+        <button type="button" disabled={isBusy || !clockVisible || clockDraft === minute} className="secondary-button clock-apply" onClick={onApplyMinute}>Apply</button>
+      </div>
+      {pendingAction && <span className="pending-state" role="status">{pendingAction}</span>}
     </div>
 
     {errorMessage && <p className="form-error" role="alert">{errorMessage}</p>}
 
     <div className="event-workspace">
       <section className="feed-panel">
-        <div className="panel-title-row"><div><span className="overline">Chronological event feed</span><h2>Match timeline</h2></div><span className="feed-source"><span className="state-light" /> Operator feed</span></div>
+        <div className="panel-title-row">
+          <div><span className="overline">Match feed</span><h2>Timeline</h2></div>
+          <span className="section-meta">Newest first</span>
+        </div>
         <div className="incident-feed">
-          {incidents.slice().sort((a, b) => b.minute - a.minute).map((incident, index) => <IncidentRow incident={incident} key={incident.id ?? `${incident.minute}-${index}`} onCorrect={(target) => { setCorrectionTarget(target); setCorrectionNote(target.detail ?? `Correct ${target.label.toLowerCase()}`); }} />)}
-          {(status === "Live" || status === "Paused") && <div className="feed-now"><span className="now-marker" /><span><strong>{status === "Paused" ? "Match paused" : "Live match in progress"}</strong><small>{status === "Paused" ? "Waiting for operator resume" : "Waiting for the next event"}</small></span><time>now</time></div>}
+          {(status === "Live" || status === "Paused") && <div className="feed-now"><time>{String(minute).padStart(2, "0")}:00</time><span className="now-marker" aria-hidden="true" /><div><strong>{status === "Paused" ? "Match paused" : "Live now"}</strong><small>{status === "Paused" ? "Waiting for operator resume" : "Waiting for the next incident"}</small></div><span className="live-chip">{status}</span></div>}
+          {orderedIncidents.map((incident, index) => <IncidentRow incident={incident} key={incident.id ?? `${incident.minute}-${index}`} onCorrect={(target) => { setCorrectionTarget(target); setCorrectionNote(target.detail ?? `Correct ${target.label.toLowerCase()}`); }} />)}
+          {!orderedIncidents.length && status !== "Live" && status !== "Paused" && <p className="route-empty">No incidents recorded for this match.</p>}
         </div>
       </section>
 
       <aside className="publish-column">
-        <section className="publish-panel">
-          <div className="panel-title-row"><div><span className="overline">Fast entry</span><h2>Record incident</h2></div><span className="shortcut">F2</span></div>
-          <div className="quick-incident-grid">
-            <button disabled={isBusy || !clockVisible} onClick={() => addGoal(home.id)}><strong>Goal</strong><small>{home.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addGoal(away.id)}><strong>Goal</strong><small>{away.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("yellow-card", "Yellow card", home.id, "Player booking")}><strong>Yellow card</strong><small>{home.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("yellow-card", "Yellow card", away.id, "Player booking")}><strong>Yellow card</strong><small>{away.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("red-card", "Red card", home.id, "Player sent off")}><strong>Red card</strong><small>{home.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("red-card", "Red card", away.id, "Player sent off")}><strong>Red card</strong><small>{away.shortName}</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("substitution", "Substitution", undefined, "Player change")}><strong>Substitution</strong><small>Either team</small></button>
-            <button disabled={isBusy || !clockVisible} onClick={() => addIncident("period-end", "Period ended", undefined, "Official time signal")}><strong>End period</strong><small>Match official</small></button>
+        <section className="publish-panel quick-entry-panel">
+          <div className="panel-title-row"><div><span className="overline">Operator input</span><h2>Record incident</h2></div></div>
+          <div className="quick-incident-grid" role="group" aria-label="Team incidents">
+            <div className="incident-column-head"><span>Home</span><strong>{home.shortName}</strong></div>
+            <div className="incident-column-head"><span>Away</span><strong>{away.shortName}</strong></div>
+            <button type="button" className="incident-action goal-action" disabled={isBusy || !clockVisible} onClick={() => addGoal(home.id)}><strong>Goal</strong><small>{home.shortName}</small></button>
+            <button type="button" className="incident-action goal-action" disabled={isBusy || !clockVisible} onClick={() => addGoal(away.id)}><strong>Goal</strong><small>{away.shortName}</small></button>
+            <button type="button" className="incident-action yellow-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("yellow-card", "Yellow card", home.id, "Player booking")}><strong>Yellow card</strong><small>{home.shortName}</small></button>
+            <button type="button" className="incident-action yellow-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("yellow-card", "Yellow card", away.id, "Player booking")}><strong>Yellow card</strong><small>{away.shortName}</small></button>
+            <button type="button" className="incident-action red-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("red-card", "Red card", home.id, "Player sent off")}><strong>Red card</strong><small>{home.shortName}</small></button>
+            <button type="button" className="incident-action red-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("red-card", "Red card", away.id, "Player sent off")}><strong>Red card</strong><small>{away.shortName}</small></button>
+          </div>
+          <div className="incident-wide-actions">
+            <button type="button" className="incident-action neutral-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("substitution", "Substitution", undefined, "Player change")}><strong>Substitution</strong><small>Either team</small></button>
+            <button type="button" className="incident-action neutral-action" disabled={isBusy || !clockVisible} onClick={() => addIncident("period-end", "Period ended", undefined, "Official time signal")}><strong>End period</strong><small>Match official</small></button>
           </div>
         </section>
 
         <section className="publish-panel commentary-publish">
-          <div className="panel-title-row"><div><span className="overline">Publishing</span><h2>Live commentary</h2></div><span className="publish-state">{clockVisible ? "Ready to publish" : "Event not live"}</span></div>
-          <div className="published-list">{commentary.slice(0, 2).map((item, index) => <div className="published-row" key={item.id ?? `${item.publishedAt ?? item.minute}-${index}`}><time>{item.minute}:00</time><p>{item.body}</p></div>)}</div>
-          <div className="composer"><textarea disabled={isBusy || !clockVisible} maxLength={500} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Draft an update for Live Center" /><div><span>Draft only until published</span><button disabled={isBusy || !clockVisible || !draft.trim()} className="publish-button" onClick={publishCommentary}>Publish update</button></div></div>
+          <div className="panel-title-row"><div><span className="overline">Publishing</span><h2>Live commentary</h2></div><span className={clockVisible ? "publish-state" : "validation-state"}>{clockVisible ? "Available" : "Match not live"}</span></div>
+          <div className="published-list">{commentary.slice(0, 3).map((item, index) => <div className="published-row" key={item.id ?? `${item.publishedAt ?? item.minute}-${index}`}><time>{item.minute}:00</time><p>{item.body}</p></div>)}</div>
+          <div className="composer">
+            <label htmlFor="commentary-draft">Commentary update</label>
+            <textarea id="commentary-draft" disabled={isBusy || !clockVisible} maxLength={500} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Write a factual match update" />
+            <div><span>{draft.length}/500</span><button type="button" disabled={isBusy || !clockVisible || !draft.trim()} className="publish-button" onClick={publishCommentary}>Publish</button></div>
+          </div>
         </section>
 
-        <StatisticsEditor statistics={statistics} onSave={onSaveStatistics} pending={pendingAction === "Saving statistics..."} disabled={isBusy || !clockVisible} />
+        <StatisticsEditor statistics={statistics} onSave={onSaveStatistics} pending={pendingAction === "Saving statistics..."} disabled={isBusy || !clockVisible} homeLabel={home.shortName} awayLabel={away.shortName} />
       </aside>
     </div>
 
-    {correctionTarget && <div className="modal-backdrop" role="presentation"><section className="operation-dialog" role="dialog" aria-modal="true" aria-labelledby="correction-title"><span className="overline">Incident correction</span><h2 id="correction-title">Correct {correctionTarget.label.toLowerCase()}</h2><p>This keeps the original incident in history and appends a correction referencing it.</p><label>Correction note<textarea autoFocus maxLength={240} value={correctionNote} onChange={(event) => setCorrectionNote(event.target.value)} /></label><div className="dialog-actions"><button className="secondary-button" type="button" disabled={isBusy} onClick={() => { setCorrectionTarget(null); setCorrectionNote(""); }}>Cancel</button><button className="publish-button" type="button" disabled={isBusy || !correctionNote.trim()} onClick={() => void confirmCorrection()}>Save correction</button></div></section></div>}
+    {correctionTarget && <div className="modal-backdrop" role="presentation"><section className="operation-dialog" role="dialog" aria-modal="true" aria-labelledby="correction-title"><span className="overline">Incident correction</span><h2 id="correction-title">Correct {correctionTarget.label.toLowerCase()}</h2><p>The original incident remains in the audit trail. The correction is recorded as a separate event.</p><label>Correction note<textarea autoFocus maxLength={240} value={correctionNote} onChange={(event) => setCorrectionNote(event.target.value)} /></label><div className="dialog-actions"><button className="secondary-button" type="button" disabled={isBusy} onClick={() => { setCorrectionTarget(null); setCorrectionNote(""); }}>Cancel</button><button className="publish-button" type="button" disabled={isBusy || !correctionNote.trim()} onClick={() => void confirmCorrection()}>Save correction</button></div></section></div>}
 
-    {statusConfirmation && <div className="modal-backdrop" role="presentation"><section className="operation-dialog" role="dialog" aria-modal="true" aria-labelledby="status-confirmation-title"><span className="overline">Confirm event state</span><h2 id="status-confirmation-title">{statusConfirmation === "Finished" ? "End this event?" : "Cancel this event?"}</h2><p>{statusConfirmation === "Finished" ? "The result will become final and standings will be recalculated." : "This event will be marked cancelled and live-entry controls will close."}</p><div className="dialog-actions"><button className="secondary-button" type="button" disabled={isBusy} onClick={() => setStatusConfirmation(null)}>Keep event open</button><button className={statusConfirmation === "Cancelled" ? "secondary-button danger-control" : "publish-button"} type="button" disabled={isBusy} onClick={() => { const next = statusConfirmation; setStatusConfirmation(null); setStatus(next); }}>{statusConfirmation === "Finished" ? "End event" : "Cancel event"}</button></div></section></div>}
+    {statusConfirmation && <div className="modal-backdrop" role="presentation"><section className="operation-dialog" role="dialog" aria-modal="true" aria-labelledby="status-confirmation-title"><span className="overline">Confirm match state</span><h2 id="status-confirmation-title">{statusConfirmation === "Finished" ? "End this match?" : "Cancel this match?"}</h2><p>{statusConfirmation === "Finished" ? "The result becomes final and standings are recalculated." : "The match is marked cancelled and live entry controls close."}</p><div className="dialog-actions"><button className="secondary-button" type="button" disabled={isBusy} onClick={() => setStatusConfirmation(null)}>Go back</button><button className={statusConfirmation === "Cancelled" ? "secondary-button danger-control" : "publish-button"} type="button" disabled={isBusy} onClick={() => { const next = statusConfirmation; setStatusConfirmation(null); setStatus(next); }}>{statusConfirmation === "Finished" ? "End match" : "Cancel match"}</button></div></section></div>}
   </div>;
 }
 
@@ -130,13 +173,13 @@ function IncidentRow({ incident, onCorrect }: { incident: Incident; onCorrect: (
   const canCorrect = Boolean(incident.id) && incident.type !== "correction" && !incident.corrected;
   return <div className={`incident-row${incident.corrected ? " incident-corrected" : ""}`}>
     <time>{String(incident.minute).padStart(2, "0")}:00</time>
-    <span className={`incident-marker ${incident.type}`} />
-    <div><strong>{incident.label}{incident.corrected ? " (corrected)" : ""}</strong><span>{incident.team ?? "Match official"}</span><small>{incident.detail ?? "Event recorded in the operations feed"}</small></div>
-    {canCorrect && <button className="text-control" onClick={() => onCorrect(incident)}>Correct</button>}
+    <span className={`incident-marker ${incident.type}`} aria-hidden="true" />
+    <div><strong>{incident.label}{incident.corrected ? " (corrected)" : ""}</strong><span>{incident.team ?? "Match official"}</span>{incident.detail && <small>{incident.detail}</small>}</div>
+    {canCorrect && <button type="button" className="text-control" onClick={() => onCorrect(incident)}>Correct</button>}
   </div>;
 }
 
-function StatisticsEditor({ statistics, onSave, pending, disabled }: { statistics: MatchStatistics; onSave: (statistics: MatchStatistics) => Promise<void>; pending: boolean; disabled: boolean }) {
+function StatisticsEditor({ statistics, onSave, pending, disabled, homeLabel, awayLabel }: { statistics: MatchStatistics; onSave: (statistics: MatchStatistics) => Promise<void>; pending: boolean; disabled: boolean; homeLabel: string; awayLabel: string }) {
   const [draft, setDraft] = useState<MatchStatistics>(statistics);
   const fields = [
     { label: "Possession", key: "possession" as const, max: 100 },
@@ -148,10 +191,18 @@ function StatisticsEditor({ statistics, onSave, pending, disabled }: { statistic
   const validPossession = draft.possession.home + draft.possession.away === 100;
   const validShots = draft.shotsOnTarget.home <= draft.shots.home && draft.shotsOnTarget.away <= draft.shots.away;
   const valid = validPossession && validShots;
-  const status = !validPossession ? "Possession must total 100" : !validShots ? "Shots on target cannot exceed shots" : "Valid";
+  const status = !validPossession ? "Possession must total 100" : !validShots ? "Shots on target exceed shots" : "Ready";
+
   return <section className="publish-panel statistics-editor">
-    <div className="panel-title-row"><div><span className="overline">Match data</span><h2>Statistics</h2></div><span className="publish-state">{status}</span></div>
-    {fields.map((field) => <div className="stat-edit-row" key={field.key}><span>{field.label}</span><input disabled={disabled} type="number" min="0" max={field.max} value={draft[field.key].home} onChange={(event) => setDraft({ ...draft, [field.key]: { ...draft[field.key], home: Number(event.target.value) } })} /><span>-</span><input disabled={disabled} type="number" min="0" max={field.max} value={draft[field.key].away} onChange={(event) => setDraft({ ...draft, [field.key]: { ...draft[field.key], away: Number(event.target.value) } })} /></div>)}
-    <button className="publish-button" disabled={disabled || pending || !valid} onClick={() => onSave(draft)}>{pending ? "Saving..." : "Save statistics"}</button>
+    <div className="panel-title-row"><div><span className="overline">Match data</span><h2>Statistics</h2></div><span className={valid ? "publish-state" : "validation-state"}>{status}</span></div>
+    <div className="statistics-grid">
+      <div className="stat-head"><span>Metric</span><strong>{homeLabel}</strong><strong>{awayLabel}</strong></div>
+      {fields.map((field) => <div className="stat-edit-row" key={field.key}>
+        <label htmlFor={`stat-home-${field.key}`}>{field.label}</label>
+        <input id={`stat-home-${field.key}`} aria-label={`${homeLabel} ${field.label}`} disabled={disabled} type="number" min="0" max={field.max} value={draft[field.key].home} onChange={(event) => setDraft({ ...draft, [field.key]: { ...draft[field.key], home: Number(event.target.value) } })} />
+        <input id={`stat-away-${field.key}`} aria-label={`${awayLabel} ${field.label}`} disabled={disabled} type="number" min="0" max={field.max} value={draft[field.key].away} onChange={(event) => setDraft({ ...draft, [field.key]: { ...draft[field.key], away: Number(event.target.value) } })} />
+      </div>)}
+    </div>
+    <div className="statistics-footer"><span>{disabled ? "Available while the match is live or paused." : "Save to publish updated values to the Live Center."}</span><button type="button" className="publish-button" disabled={disabled || pending || !valid} onClick={() => void onSave(draft)}>{pending ? "Saving..." : "Save statistics"}</button></div>
   </section>;
 }

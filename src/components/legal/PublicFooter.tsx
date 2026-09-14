@@ -4,7 +4,7 @@ import { ConsentPreferencesButton } from "@/components/privacy/ConsentPreference
 export function PublicFooter() {
   return (
     <footer className="public-footer">
-      <span>Sports Live Ops / Fictional competition data / Portfolio demonstration</span>
+      <span>Sports Live Ops. Fictional competition data.</span>
       <nav aria-label="Legal">
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>

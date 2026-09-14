@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Sports Live Ops — real-time sports event operations and live center";
+export const alt = "Sports Live Ops match operations interface";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -14,20 +14,20 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#1b2021",
-          color: "#ffffff",
+          background: "#08090A",
+          color: "#F4F5F3",
           padding: "72px",
           fontFamily: "Arial, sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
-          <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: "#b8f500", color: "#172000" }}>S</div>
-          SPORTS LIVE OPS
+        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 26, fontWeight: 700 }}>
+          <div style={{ width: 5, height: 28, background: "#FF625B" }} />
+          Sports Live Ops
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ color: "#b8f500", fontSize: 24, fontWeight: 700, letterSpacing: 2 }}>LIVE EVENT OPERATIONS</div>
-          <div style={{ maxWidth: 900, fontSize: 68, lineHeight: 1.02, fontWeight: 700 }}>Operate the match. Publish the moment.</div>
-          <div style={{ color: "#c8d0cc", fontSize: 26 }}>Control Room + public Live Center / portfolio demonstration</div>
+          <div style={{ color: "#929DA3", fontSize: 22, fontWeight: 600 }}>MATCH OPERATIONS</div>
+          <div style={{ maxWidth: 900, fontSize: 68, lineHeight: 1.02, fontWeight: 700 }}>Operate live matches from one control room.</div>
+          <div style={{ color: "#C8CECB", fontSize: 26 }}>Match state, incidents, commentary, statistics and public updates.</div>
         </div>
       </div>
     ),

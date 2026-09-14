@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   return (
     <div className="public-view legal-view">
       <header className="public-header">
-        <Link className="public-wordmark" href="/live">SPORTS LIVE OPS <span>/ LIVE CENTER</span></Link>
+        <Link className="public-wordmark" href="/live"><strong>Sports Live Ops</strong><span>Live Center</span></Link>
         <Link className="follow-button" href="/live">Back to Live Center</Link>
       </header>
       <main className="legal-page">

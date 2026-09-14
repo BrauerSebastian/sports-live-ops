@@ -1,11 +1,12 @@
 const pairs = [
-  ["body text", "#1b2021", "#f4f5f3", 4.5],
-  ["muted text", "#5f6967", "#f4f5f3", 4.5],
-  ["subtle text", "#5b6562", "#f4f5f3", 4.5],
-  ["navigation text", "#bbc3bf", "#202526", 4.5],
-  ["live text on white", "#567400", "#ffffff", 4.5],
-  ["danger text on white", "#c84b3f", "#ffffff", 4.5],
-  ["warning text on white", "#9a5a00", "#ffffff", 4.5],
+  ["body text", "#f3f6f8", "#0b1015", 4.5],
+  ["muted text", "#9aa8b2", "#0b1015", 4.5],
+  ["subtle text", "#7f8e99", "#0b1015", 4.5],
+  ["navigation text", "#a8b4bc", "#0a0e12", 4.5],
+  ["panel text", "#cbd4da", "#141a20", 4.5],
+  ["live text", "#f47a6e", "#0b1015", 4.5],
+  ["warning text", "#e0b862", "#0b1015", 4.5],
+  ["danger text", "#f07870", "#0b1015", 4.5],
 ];
 
 function rgb(hex) {
