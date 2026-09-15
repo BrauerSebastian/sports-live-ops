@@ -3233,230 +3233,246 @@ body {
   mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.12) 12%, rgba(0,0,0,.72) 28%, #000 43%, #000 86%, rgba(0,0,0,.55) 94%, transparent 100%);
 }
 
-/* Corrective product-authenticity pass: balance, fixture alignment, type and tonal restraint. */
+/* Final senior visual refinement. Layout and information architecture intentionally preserved. */
 :root {
-  --cc-bg: #071019;
-  --cc-bg-2: #071019;
+  --cc-bg: #071018;
+  --cc-bg-2: #071018;
   --cc-sidebar: #08121a;
-  --cc-card: #0e1821;
-  --cc-card-2: #101c25;
+  --cc-card: #0d1922;
+  --cc-card-2: #0f1b24;
   --cc-card-3: #13212c;
-  --cc-border: rgba(140, 160, 180, 0.15);
-  --cc-border-strong: rgba(140, 160, 180, 0.18);
-  --cc-border-hover: rgba(156, 177, 195, 0.27);
-  --cc-text: #eef3f8;
-  --cc-primary: #e5ebf1;
-  --cc-text-2: #a9b5c2;
-  --cc-text-3: #7b8b9b;
-  --cc-text-4: #61707f;
+  --cc-border: rgba(137, 157, 176, 0.14);
+  --cc-border-strong: rgba(145, 166, 185, 0.18);
+  --cc-border-hover: rgba(158, 178, 196, 0.23);
+  --cc-text: #f1f5f8;
+  --cc-primary: #e6edf3;
+  --cc-text-2: #a6b3bf;
+  --cc-text-3: #7c8c9b;
+  --cc-text-4: #617180;
   --cc-time: #afc0d0;
-  --cc-live: #46f08c;
-  --cc-red: #f45a64;
+  --cc-live: #46ea89;
+  --cc-red: #ef5965;
 }
 
-/* Let large desktop canvases breathe without leaving a dead band on the right. */
-.cc-dashboard-page {
-  max-width: none;
-}
-
-.cc-hero-grid {
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, .82fr) clamp(350px, 24vw, 390px);
-}
-
-.cc-dashboard-lower {
-  grid-template-columns: minmax(0, 1fr) clamp(350px, 24vw, 390px);
-}
-
-.cc-dashboard-side-column {
-  gap: 18px;
-}
-
-/* Mature type hierarchy: fewer heavy weights and slightly quieter display sizing. */
-.cc-brand-copy strong { font-weight: 650; }
-.cc-nav-label,
-.cc-eyebrow { font-weight: 560; }
-.cc-nav-item { font-weight: 450; }
-.cc-nav-item.is-current { font-weight: 560; }
-
-.cc-page-copy h1 {
-  font-size: 42px;
-  line-height: 1.01;
-  letter-spacing: -0.035em;
-  font-weight: 640;
-  color: var(--cc-text);
-}
-
-.cc-page-subtitle {
-  color: var(--cc-text-2);
-  font-size: 15px;
-  font-weight: 400;
-}
-
-.cc-card-header h2,
-.cc-promo-overlay h2 {
+body,
+.cc-shell {
+  background: var(--cc-bg);
   color: var(--cc-primary);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.012em;
+  font-family: Inter, Geist, "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
 }
 
-.cc-featured-meta strong,
+/* Preserve the current balanced desktop composition. */
+.cc-dashboard-page { max-width: none; }
+.cc-hero-grid { grid-template-columns: minmax(0, 1.55fr) minmax(280px, .82fr) clamp(350px, 24vw, 390px); }
+.cc-dashboard-lower { grid-template-columns: minmax(0, 1fr) clamp(350px, 24vw, 390px); }
+.cc-dashboard-side-column { gap: 18px; }
+@media (min-width: 1280px) { .cc-content { padding-right: 28px; } }
+
+/* Typography: reduce the semibold-everywhere look. */
+.cc-brand-copy strong {
+  color: var(--cc-text);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -.012em;
+}
+.cc-brand-copy small {
+  color: var(--cc-text-4);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: .15em;
+}
+.cc-nav-label,
+.cc-eyebrow {
+  color: var(--cc-text-4);
+  font-size: 9.5px;
+  font-weight: 550;
+  letter-spacing: .16em;
+}
+.cc-nav-item { color: #93a1ae; font-size: 13px; font-weight: 430; }
+.cc-nav-item.is-current { color: #e9eef3; font-weight: 550; }
+.cc-page-copy h1 {
+  color: var(--cc-text);
+  font-size: 40px;
+  font-weight: 650;
+  letter-spacing: -.025em;
+  line-height: 1.05;
+}
+.cc-page-subtitle { color: var(--cc-text-2); font-size: 13px; font-weight: 400; line-height: 1.55; }
+.cc-card-header h2,
+.cc-promo-overlay h2 { color: var(--cc-primary); font-size: 14px; font-weight: 590; letter-spacing: -.008em; }
 .cc-team-block strong,
 .cc-live-team,
-.cc-fixture-match strong,
-.cc-operation-copy strong,
+.cc-fixture-team strong,
 .cc-incident-copy strong,
-.cc-snapshot-brand strong {
-  color: var(--cc-primary);
-  font-weight: 560;
-}
-
-.cc-featured-meta span,
-.cc-incident-copy small,
+.cc-snapshot-brand strong,
+.cc-featured-meta strong { color: var(--cc-primary); font-weight: 550; }
+.cc-team-block strong { font-size: 13px; }
+.cc-featured-meta strong { font-size: 12px; }
+.cc-featured-meta span { font-size: 10.75px; font-weight: 400; }
+.cc-score-block strong { color: var(--cc-text); font-weight: 625; }
+.cc-score-block span { color: var(--cc-text-3); font-size: 11px; font-weight: 400; }
+.cc-featured-incident small,
 .cc-snapshot-brand small,
-.cc-operation-copy small,
-.cc-operation-actor,
 .cc-live-venue,
 .cc-fixture-row > span:nth-child(4),
-.cc-snapshot-row span {
-  color: var(--cc-text-3);
-  font-weight: 400;
-}
+.cc-snapshot-row span,
+.cc-operation-copy small,
+.cc-operation-actor { color: var(--cc-text-3); font-weight: 400; }
 
-.cc-score-block strong { font-weight: 650; }
-.cc-snapshot-row strong,
-.cc-operation-time,
-.cc-live-row-score { color: var(--cc-primary); font-weight: 600; }
-
-/* Surface hierarchy: cooler, less synthetic, and deliberately close in value. */
+/* Tonal hierarchy: close in value, not algorithmically identical. */
 .cc-card {
   background: var(--cc-card);
-  border-color: var(--cc-border);
+  border: 1px solid var(--cc-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.022);
 }
-.cc-featured-match,
-.cc-list-card,
-.cc-table-card { background: var(--cc-card); }
+.cc-featured-match {
+  background: #0d1922;
+  border-color: var(--cc-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.027);
+}
 .cc-stats-card,
 .cc-snapshot-card,
 .cc-operations-card { background: var(--cc-card-2); }
-.cc-featured-match,
 .cc-stats-card,
-.cc-snapshot-card { border-color: var(--cc-border-strong); }
-.cc-card::after { box-shadow: inset 0 1px 0 rgba(255,255,255,.02); }
+.cc-snapshot-card { border-color: rgba(145,166,185,.165); }
+.cc-list-card,
+.cc-table-card { background: #0d1922; }
+.cc-card-header,
+.cc-featured-top,
+.cc-featured-incident,
+.cc-live-row,
+.cc-fixture-head,
+.cc-fixture-row,
+.cc-operation-row,
+.cc-snapshot-brand,
+.cc-snapshot-row { border-color: rgba(145,165,183,.09); }
+.cc-live-row:hover,
+.cc-fixture-row:hover { background: rgba(255,255,255,.018); }
 
-.cc-primary-button {
-  background: #eef3f8;
-  border-color: #eef3f8;
-  color: #081019;
-}
-.cc-primary-button:hover { background: #f4f7fa; border-color: #f4f7fa; }
+/* Match stats: analytical and quiet. */
+.cc-stats-card .cc-card-header { padding-top: 18px; padding-bottom: 15px; }
+.cc-stats-card .cc-card-header h2 { font-size: 14px; font-weight: 590; }
+.cc-live-inline { color: #8fa0ae; font-size: 10.5px; font-weight: 400; }
+.cc-inline-dot { width: 6px; height: 6px; background: var(--cc-live); box-shadow: none; }
+.cc-stats-list { gap: 16px; padding: 0 20px 2px; }
+.cc-stat-row { gap: 10px; }
+.cc-stat-values { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 12px; }
+.cc-stat-values strong { color: var(--cc-primary); font-size: 13px; font-weight: 575; }
+.cc-stat-values span { color: #94a3b0; font-size: 11.25px; font-weight: 400; }
+.cc-comparison-bar { height: 3px; grid-template-columns: minmax(0, 1fr) 7px minmax(0, 1fr); }
+.cc-comparison-half,
+.cc-comparison-half i { height: 3px; }
+.cc-comparison-half { background: rgba(255,255,255,.035); }
+.cc-comparison-center { width: 1px; height: 3px; background: rgba(255,255,255,.075); }
+.cc-bar-home { background: #dce5ec; box-shadow: 0 0 5px rgba(230,238,244,.04); }
+.cc-bar-away { background: #ef5965; box-shadow: 0 0 5px rgba(239,89,101,.07); }
 
-.cc-search input::placeholder { color: #7d8d9c; }
-.cc-avatar { background: #1b2a35; color: #cdd7e1; }
-.cc-nav-item.is-current::before { background: #d8e0e7; }
-
-/* Fixture matchups share one stable visual axis across every row. */
+/* Preserve the established three-zone fixture comparison axis. */
 .cc-fixture-match {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   min-width: 0;
 }
-
-.cc-fixture-team {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.cc-fixture-team-home {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.cc-fixture-team-away {
-  justify-content: flex-start;
-  text-align: left;
-}
-
+.cc-fixture-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cc-fixture-team-home { justify-content: flex-end; text-align: right; }
+.cc-fixture-team-away { justify-content: flex-start; text-align: left; }
 .cc-fixture-team strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
-  font-weight: 520;
-}
-
-.cc-fixture-vs {
-  display: block;
-  width: 30px;
-  text-align: center;
-  color: var(--cc-text-4);
+  color: var(--cc-primary);
   font-size: 12px;
-  font-weight: 400;
-  line-height: 1;
+  font-weight: 525;
 }
-
-/* High-end data rows: lighter dividers and slightly calmer density. */
-.cc-fixture-head,
-.cc-fixture-row,
-.cc-live-row,
-.cc-operation-row,
-.cc-snapshot-row {
-  border-color: rgba(140, 160, 180, 0.10);
-}
-
-.cc-fixture-row {
-  min-height: 59px;
-}
-
+.cc-fixture-vs { display: block; width: 34px; text-align: center; color: #6f7f8d; font-size: 10.75px; font-weight: 400; line-height: 1; }
+.cc-fixture-head { min-height: 39px; color: #718292; font-size: 10.75px; font-weight: 400; }
+.cc-fixture-row { min-height: 56px; color: var(--cc-text-2); font-size: 12px; font-weight: 400; }
 .cc-fixture-row > span:first-child,
-.cc-fixture-row > span:nth-child(2) {
-  color: var(--cc-time);
-  font-weight: 400;
+.cc-fixture-row > span:nth-child(2) { color: var(--cc-time); font-size: 11.25px; font-weight: 400; }
+.cc-fixture-row > span:nth-child(4) { color: var(--cc-text-3); font-size: 11.25px; }
+.cc-row-button-open { min-height: 30px; font-size: 11.5px; font-weight: 500; }
+@media (max-width: 1024px) { .cc-fixture-match { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); } }
+
+/* Activity log: quieter and easier to scan. */
+.cc-operation-row { grid-template-columns: auto 46px minmax(0, 1fr) auto; gap: 11px; padding: 15px 20px; }
+.cc-operation-dot { width: 5.5px; height: 5.5px; margin-top: 3px; box-shadow: none; }
+.cc-operation-time { color: #d4dce3; font-size: 11px; font-weight: 550; line-height: 1.35; }
+.cc-operation-copy { gap: 3px; }
+.cc-operation-copy strong { color: #dfe6ec; font-size: 11px; font-weight: 550; letter-spacing: .01em; line-height: 1.3; }
+.cc-operation-copy small { color: #788a99; font-size: 10.25px; font-weight: 400; line-height: 1.35; }
+.cc-operation-actor { color: #718290; font-size: 10.25px; font-weight: 400; line-height: 1.35; }
+
+/* Snapshot stays a flat secondary surface. */
+.cc-snapshot-brand { padding-bottom: 16px; }
+.cc-snapshot-brand strong { font-size: 16px; font-weight: 560; }
+.cc-snapshot-brand small { font-size: 11px; }
+.cc-snapshot-row { padding-top: 10px; padding-bottom: 10px; }
+.cc-snapshot-row span { color: var(--cc-text-3); font-size: 11px; }
+.cc-snapshot-row strong { color: var(--cc-primary); font-size: 13px; font-weight: 550; }
+
+/* Three clear action levels. */
+.cc-primary-button {
+  background: #eef2f5;
+  border-color: #eef2f5;
+  color: #101820;
+  font-size: 12px;
+  font-weight: 550;
+  transition: background-color 170ms ease, border-color 170ms ease, color 170ms ease;
+}
+.cc-primary-button:hover { background: #f3f6f8; border-color: #f3f6f8; }
+.cc-row-button,
+.cc-secondary-button { color: var(--cc-primary); font-weight: 500; transition: background-color 170ms ease, border-color 170ms ease, color 170ms ease; }
+.cc-card-header-link a { color: #8494a3; font-size: 11px; font-weight: 400; }
+.cc-card-header-link a:hover { color: var(--cc-text-2); }
+
+/* Live state remains semantic, not decorative. */
+.cc-live-pill,
+.cc-live-minute-pill { background: var(--cc-live); color: #07120c; box-shadow: 0 0 10px rgba(70,234,137,.055); font-weight: 600; }
+.cc-live-pill-dot { background: #0b2416; }
+.cc-system-dot,
+.cc-operation-dot.green { background: var(--cc-live); }
+
+/* Sidebar defaults stay quiet; selected state does the work. */
+.cc-sidebar { background: var(--cc-sidebar); }
+.cc-nav-item:hover { background: rgba(255,255,255,.018); border-color: rgba(145,165,183,.08); }
+.cc-nav-item.is-current { background: rgba(19,33,44,.78); border-color: rgba(145,165,183,.11); }
+.cc-nav-item.is-current::before { background: #d5dde5; }
+
+/* Keep the current stadium asset; only smooth the vertical transition. */
+.cc-stadium-art {
+  opacity: .90;
+  background-image:
+    linear-gradient(to right, #071018 0%, rgba(7,16,24,.40) 18%, rgba(7,16,24,.04) 53%, rgba(7,16,24,.22) 100%),
+    linear-gradient(to bottom, rgba(7,16,24,.02) 0%, rgba(7,16,24,.07) 40%, rgba(7,16,24,.22) 68%, rgba(7,16,24,.58) 86%, #071018 100%),
+    url("/images/stadium-hero.webp");
 }
 
-.cc-live-row:hover,
-.cc-fixture-row:hover {
-  background: rgba(255,255,255,.016);
-}
+/* Micro-alignment and rhythm. */
+.cc-card-header { align-items: center; }
+.cc-card-header-link a,
+.cc-live-inline,
+.cc-live-venue,
+.cc-row-button,
+.cc-secondary-button,
+.cc-primary-button { align-items: center; }
+.cc-live-row { padding-top: 13px; padding-bottom: 13px; }
+.cc-list-card .cc-card-header,
+.cc-table-card .cc-card-header { padding-top: 15px; padding-bottom: 12px; }
+.cc-operations-card .cc-card-header { padding-top: 16px; padding-bottom: 12px; }
+.cc-promo-overlay h2 { font-size: 18px; font-weight: 590; letter-spacing: -.015em; }
+.cc-promo-overlay p { color: var(--cc-text-2); font-size: 11.5px; font-weight: 400; }
 
-/* Match stats retain the opposing-team broadcast treatment, with softer tracks. */
-.cc-stat-values strong { color: var(--cc-primary); font-weight: 620; }
-.cc-stat-values span { color: #93a3b3; font-weight: 430; }
-.cc-comparison-half { background: rgba(238,243,248,.038); }
-.cc-comparison-center { background: rgba(238,243,248,.085); }
-.cc-bar-home { background: rgba(238,243,248,.90); }
-.cc-bar-away { background: var(--cc-red); }
-
-/* Crests keep one restrained football identity without looking like flat placeholders. */
-.cc-team-crest {
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,.28)) drop-shadow(0 1px 0 rgba(255,255,255,.02));
-}
-.cc-team-crest .crest-body { stroke-width: 1.2; }
-.cc-team-crest .crest-detail { opacity: .92; }
-.cc-team-crest .crest-line { opacity: .42; stroke-width: 1.15; }
-.cc-team-crest.northbridge .crest-body { fill: #e9eef2; stroke: #f2f5f7; }
-.cc-team-crest.northbridge .crest-detail { fill: #4d5a65; }
-.cc-team-crest.eastvale .crest-body { fill: var(--cc-red); stroke: #f77780; }
-.cc-team-crest.eastvale .crest-detail { fill: #581a22; }
-
-/* Live state remains operational, not decorative. */
-.cc-live-pill { background: var(--cc-live); box-shadow: 0 0 14px rgba(70,240,140,.08); }
-.cc-live-minute-pill { background: var(--cc-live); box-shadow: 0 0 8px rgba(70,240,140,.055); }
-.cc-inline-dot,
-.cc-operation-dot.green,
-.cc-system-dot { background: var(--cc-live); }
-
-@media (min-width: 1280px) {
-  .cc-content { padding-right: 28px; }
-}
-
-@media (max-width: 1024px) {
-  .cc-fixture-match {
-    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
-  }
-}
+/* Crests share a restrained fictional club system. */
+.cc-team-crest { filter: drop-shadow(0 1px 1px rgba(0,0,0,.22)); }
+.cc-team-crest .crest-body { stroke-width: 1.05; }
+.cc-team-crest .crest-detail { opacity: .88; }
+.cc-team-crest .crest-line { opacity: .34; stroke-width: 1; }
+.cc-team-crest.northbridge .crest-body { fill: #e5ebef; stroke: #f0f3f5; }
+.cc-team-crest.northbridge .crest-detail { fill: #46525d; }
+.cc-team-crest.eastvale .crest-body { fill: #ef5965; stroke: #f17a83; }
+.cc-team-crest.eastvale .crest-detail { fill: #521a21; }
